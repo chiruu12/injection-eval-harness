@@ -153,12 +153,37 @@ def test_every_served_route_has_a_rewrite():
         assert path in sources, f"{path} is served by the handler and not routed to it"
 
 
-def test_the_page_is_built_and_not_served_by_the_function():
-    """`/` is a static file from the build, so the function must not claim it."""
+def test_the_page_is_built_at_deploy_time():
     config = json.loads((ROOT / "vercel.json").read_text())
     assert config["buildCommand"] == "python3 scripts/build_site.py"
     assert config["outputDirectory"] == "public"
-    assert "/" not in {rule["source"] for rule in config["rewrites"]}
+
+
+def test_root_serves_html_not_the_plain_text_placeholder():
+    """A static public/index.html wins; this is the fallback when the build did not run."""
+    status, headers, body = _call("/")
+    assert status.startswith("200")
+    assert headers["Content-Type"] == "text/html; charset=utf-8"
+    assert body.lstrip().startswith(b"<!doctype html>")
+    assert b"capability failures" in body
+
+
+def test_the_page_falls_back_to_rendering_when_the_build_did_not_run(monkeypatch):
+    """The build image may lack python; the previous deployment then serves forever."""
+    monkeypatch.setattr(api, "PAGE", ROOT / "public" / "does-not-exist.html")
+    status, headers, body = _call("/")
+    assert status.startswith("200")
+    assert headers["Content-Type"] == "text/html; charset=utf-8"
+    assert b"<svg" in body
+
+
+def test_a_broken_renderer_does_not_take_the_json_routes_down(monkeypatch):
+    monkeypatch.setattr(api, "PAGE", ROOT / "public" / "does-not-exist.html")
+    monkeypatch.setattr(api, "ROOT", ROOT / "does-not-exist")
+    status, headers, body = _call("/")
+    assert status.startswith("200")
+    assert headers["Content-Type"] == "text/plain; charset=utf-8"
+    assert b"injection-eval-harness" in body
 
 
 def test_the_build_script_is_not_excluded_from_the_deployment():
@@ -168,8 +193,16 @@ def test_the_build_script_is_not_excluded_from_the_deployment():
         for line in (ROOT / ".vercelignore").read_text().splitlines()
         if line.strip() and not line.startswith("#")
     ]
-    for needed in ("scripts/", "results/", "api/", "public/"):
+    for needed in ("scripts/", "results/", "api/", "public/", "src/injection_eval/"):
         assert needed not in ignored, f".vercelignore drops {needed}, which the build needs"
+
+
+def test_the_renderer_is_stdlib_only():
+    """It runs inside the function, so a third-party import would need installing."""
+    source = (ROOT / "scripts" / "build_site.py").read_text()
+    for banned in ("torch", "transformers", "sklearn", "numpy", "injection_eval"):
+        assert f"import {banned}" not in source
+        assert f"from {banned}" not in source
 
 
 def test_a_path_without_a_leading_slash_is_still_matched():

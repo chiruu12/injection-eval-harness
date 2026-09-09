@@ -9,8 +9,21 @@
     }
   },
   "rewrites": [
-    { "source": "/results.json", "destination": "/api/index?path=/results.json" },
-    { "source": "/manifest.json", "destination": "/api/index?path=/manifest.json" },
-    { "source": "/tables.md", "destination": "/api/index?path=/tables.md" }
+    {
+      "source": "/results.json",
+      "destination": "/api/index?path=/results.json"
+    },
+    {
+      "source": "/manifest.json",
+      "destination": "/api/index?path=/manifest.json"
+    },
+    {
+      "source": "/tables.md",
+      "destination": "/api/index?path=/tables.md"
+    },
+    {
+      "source": "/",
+      "destination": "/api/index?path=/"
+    }
   ]
 }
