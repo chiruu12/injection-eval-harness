@@ -139,6 +139,10 @@ make report    # render results/TABLES.md
 seed, platform, split checksums and the harness git sha. A table that cannot be
 traced to a manifest is not a result.
 
+Two independent full runs on the same checkout produced byte-identical
+`results.json`, including the bootstrap intervals and every transformed slice. If
+a re-run disagrees, something is unpinned and the manifest will say which.
+
 ## What this is not
 
 Not a benchmark. Two test splits totalling 356 rows is enough to see a gap and
