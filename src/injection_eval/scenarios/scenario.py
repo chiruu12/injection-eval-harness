@@ -53,6 +53,9 @@ class ScriptedScenario:
     # description, which in this corpus is already a one-line statement of what
     # the user wants. A scenario with a more natural phrasing should pass it.
     opening_request: str = ""
+    # ScriptedAgent is last-turn only. Split-payload scenarios pass
+    # AccumulatingAgent so an instruction assembled across turns can hijack.
+    agent_cls: type = ScriptedAgent
 
     def __post_init__(self) -> None:
         if not self.opening_request:
@@ -60,8 +63,8 @@ class ScriptedScenario:
             object.__setattr__(self, "opening_request", self.description)
 
     def build_agent(self) -> Agent:
-        """The scripted agent for this episode, starting at the first plan step."""
-        return ScriptedAgent(
+        """The agent for this episode, starting at the first plan step."""
+        return self.agent_cls(
             plan=self.plan,
             final=self.final,
             triggers=() if self.benign else self.triggers,
