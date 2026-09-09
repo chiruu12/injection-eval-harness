@@ -7,5 +7,8 @@
       "includeFiles": "results/**"
     }
   },
-  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }]
+  "rewrites": [
+    { "source": "/", "destination": "/api/index?path=/" },
+    { "source": "/(.*)", "destination": "/api/index?path=/$1" }
+  ]
 }

@@ -19,6 +19,7 @@ from collections.abc import Callable, Iterable
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "results" / "results.json"
@@ -37,6 +38,24 @@ _ROUTES: dict[str, tuple[Path, str]] = {
     "/manifest.json": (MANIFEST, _JSON),
     "/tables.md": (TABLES, _TEXT),
 }
+
+# vercel.json rewrites every request here, so PATH_INFO is the rewrite
+# destination and not what the caller asked for: a request for /results.json
+# arrives as /api/index. The original path is carried in the `path` query
+# parameter by that same rewrite. Reading PATH_INFO alone 404s every route,
+# which is exactly what the first deployment did.
+_FUNCTION_PATHS = ("/api/index", "/api/index.py", "/api")
+
+
+def _requested_path(environ: dict[str, Any]) -> str:
+    """What the caller actually asked for, after the rewrite has rewritten it."""
+    query = parse_qs(environ.get("QUERY_STRING", ""))
+    forwarded = query.get("path", [""])[0]
+    if forwarded:
+        return forwarded if forwarded.startswith("/") else "/" + forwarded
+    path = environ.get("PATH_INFO", "/")
+    return "/" if path in _FUNCTION_PATHS else path
+
 
 _INDEX = """injection-eval-harness
 
@@ -72,7 +91,7 @@ def _body(path: str) -> tuple[int, str, bytes]:
 def app(environ: dict[str, Any], start_response: Callable[..., Any]) -> Iterable[bytes]:
     """WSGI entrypoint. Vercel's Python runtime calls this."""
     method = environ.get("REQUEST_METHOD", "GET").upper()
-    path = environ.get("PATH_INFO", "/")
+    path = _requested_path(environ)
     if method not in ("GET", "HEAD"):
         start_response("405 Method Not Allowed", [("Allow", "GET, HEAD")])
         return [b""]

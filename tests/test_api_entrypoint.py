@@ -28,8 +28,16 @@ api = _load()
 
 
 def _call(path: str, method: str = "GET") -> tuple[str, dict[str, str], bytes]:
-    environ: dict = {"PATH_INFO": path, "REQUEST_METHOD": method}
+    """A request as Vercel delivers it: rewritten to the function, path in the query.
+
+    Calling with PATH_INFO set to the caller's path would test a shape that never
+    reaches production. The first deployment 404d on every route precisely because
+    the tests asserted against that shape and the rewrite hands over another.
+    """
+    environ: dict = {"PATH_INFO": "/api/index", "QUERY_STRING": f"path={path}"}
     setup_testing_defaults(environ)
+    environ["PATH_INFO"] = "/api/index"
+    environ["QUERY_STRING"] = f"path={path}"
     environ["REQUEST_METHOD"] = method
     captured: dict = {}
 
@@ -99,3 +107,43 @@ def test_vercel_config_ships_the_files_the_function_reads(name: str):
     config = json.loads((ROOT / "vercel.json").read_text())
     assert config["functions"]["api/index.py"]["includeFiles"] == "results/**"
     assert (ROOT / "results" / name).is_file()
+
+
+def _raw(path_info: str, query: str) -> tuple[str, bytes]:
+    """Call the app with an exact PATH_INFO and QUERY_STRING, bypassing _call."""
+    environ: dict = {"PATH_INFO": path_info, "QUERY_STRING": query}
+    setup_testing_defaults(environ)
+    environ["PATH_INFO"] = path_info
+    environ["QUERY_STRING"] = query
+    captured: dict = {}
+
+    def start_response(status: str, headers: list[tuple[str, str]]) -> None:
+        captured["status"] = status
+
+    body = b"".join(api.app(environ, start_response))
+    return captured["status"], body
+
+
+@pytest.mark.parametrize("bare", ["/api/index", "/api/index.py", "/api"])
+def test_the_rewrite_destination_alone_serves_the_index(bare: str):
+    """A bare hit on the function, with no forwarded path, must not 404."""
+    status, body = _raw(bare, "")
+    assert status.startswith("200")
+    assert b"injection-eval-harness" in body
+
+
+def test_every_rewrite_in_the_config_forwards_the_original_path():
+    """The config and the handler have to agree, or every route 404s in production."""
+    config = json.loads((ROOT / "vercel.json").read_text())
+    rewrites = config["rewrites"]
+    assert rewrites, "no rewrites; requests would never reach the function"
+    for rule in rewrites:
+        assert rule["destination"].startswith("/api/index?path="), rule
+    assert rewrites[-1]["source"] == "/(.*)"
+    assert rewrites[-1]["destination"] == "/api/index?path=/$1"
+
+
+def test_a_path_without_a_leading_slash_is_still_matched():
+    status, body = _raw("/api/index", "path=results.json")
+    assert status.startswith("200")
+    assert body == (ROOT / "results" / "results.json").read_bytes()
