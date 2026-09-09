@@ -244,6 +244,9 @@ class Scenario(Protocol):
     key: str
     description: str
     benign: bool
+    opening_request: str
+    """What the user asks for on turn 0. The runner puts this on the first turn,
+    and a guard placed at the user-input boundary inspects it there."""
 
     def build_agent(self) -> Agent:
         ...
