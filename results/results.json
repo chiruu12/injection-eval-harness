@@ -3087,164 +3087,368 @@
     "regex-floor": {
       "baseline_recall": 0.25,
       "n_positives": 120,
+      "baseline_fpr": 0.0333,
+      "n_benign": 120,
       "transforms": {
         "base64_with_instruction": {
           "recall": 1.0,
           "delta": 0.75,
-          "fails_robustness_bar": false
+          "recalled": 120,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 1.0,
+          "fpr_delta": 0.9667,
+          "false_positives": 120,
+          "n_benign": 120,
+          "fails_fpr_bar": true
         },
         "base64_bare": {
           "recall": 0.0,
           "delta": -0.25,
-          "fails_robustness_bar": true
+          "recalled": 0,
+          "n_positives": 120,
+          "fails_robustness_bar": true,
+          "fpr": 0.0,
+          "fpr_delta": -0.0333,
+          "false_positives": 0,
+          "n_benign": 120,
+          "fails_fpr_bar": false
         },
         "leetspeak": {
           "recall": 0.0,
           "delta": -0.25,
-          "fails_robustness_bar": true
+          "recalled": 0,
+          "n_positives": 120,
+          "fails_robustness_bar": true,
+          "fpr": 0.0,
+          "fpr_delta": -0.0333,
+          "false_positives": 0,
+          "n_benign": 120,
+          "fails_fpr_bar": false
         },
         "homoglyph": {
           "recall": 0.0167,
           "delta": -0.2333,
-          "fails_robustness_bar": true
+          "recalled": 2,
+          "n_positives": 120,
+          "fails_robustness_bar": true,
+          "fpr": 0.0,
+          "fpr_delta": -0.0333,
+          "false_positives": 0,
+          "n_benign": 120,
+          "fails_fpr_bar": false
         },
         "zero_width": {
           "recall": 0.1333,
           "delta": -0.1167,
-          "fails_robustness_bar": false
+          "recalled": 16,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.0,
+          "fpr_delta": -0.0333,
+          "false_positives": 0,
+          "n_benign": 120,
+          "fails_fpr_bar": false
         },
         "whitespace": {
           "recall": 0.1333,
           "delta": -0.1167,
-          "fails_robustness_bar": false
+          "recalled": 16,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.0,
+          "fpr_delta": -0.0333,
+          "false_positives": 0,
+          "n_benign": 120,
+          "fails_fpr_bar": false
         },
         "carrier": {
           "recall": 0.25,
           "delta": 0.0,
-          "fails_robustness_bar": false
+          "recalled": 30,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.0333,
+          "fpr_delta": 0.0,
+          "false_positives": 4,
+          "n_benign": 120,
+          "fails_fpr_bar": false
         }
       }
     },
     "unplug-model": {
       "baseline_recall": 0.7917,
       "n_positives": 120,
+      "baseline_fpr": 0.2,
+      "n_benign": 120,
       "transforms": {
         "base64_with_instruction": {
           "recall": 0.0,
           "delta": -0.7917,
-          "fails_robustness_bar": true
+          "recalled": 0,
+          "n_positives": 120,
+          "fails_robustness_bar": true,
+          "fpr": 0.0083,
+          "fpr_delta": -0.1917,
+          "false_positives": 1,
+          "n_benign": 120,
+          "fails_fpr_bar": false
         },
         "base64_bare": {
           "recall": 0.9917,
           "delta": 0.2,
-          "fails_robustness_bar": false
+          "recalled": 119,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.9583,
+          "fpr_delta": 0.7583,
+          "false_positives": 115,
+          "n_benign": 120,
+          "fails_fpr_bar": true
         },
         "leetspeak": {
           "recall": 0.6333,
           "delta": -0.1583,
-          "fails_robustness_bar": false
+          "recalled": 76,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.7,
+          "fpr_delta": 0.5,
+          "false_positives": 84,
+          "n_benign": 120,
+          "fails_fpr_bar": true
         },
         "homoglyph": {
           "recall": 0.7083,
           "delta": -0.0833,
-          "fails_robustness_bar": false
+          "recalled": 85,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.5667,
+          "fpr_delta": 0.3667,
+          "false_positives": 68,
+          "n_benign": 120,
+          "fails_fpr_bar": true
         },
         "zero_width": {
           "recall": 0.8667,
           "delta": 0.075,
-          "fails_robustness_bar": false
+          "recalled": 104,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.45,
+          "fpr_delta": 0.25,
+          "false_positives": 54,
+          "n_benign": 120,
+          "fails_fpr_bar": true
         },
         "whitespace": {
           "recall": 0.8083,
           "delta": 0.0167,
-          "fails_robustness_bar": false
+          "recalled": 97,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.25,
+          "fpr_delta": 0.05,
+          "false_positives": 30,
+          "n_benign": 120,
+          "fails_fpr_bar": false
         },
         "carrier": {
           "recall": 1.0,
           "delta": 0.2083,
-          "fails_robustness_bar": false
+          "recalled": 120,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.9417,
+          "fpr_delta": 0.7417,
+          "false_positives": 113,
+          "n_benign": 120,
+          "fails_fpr_bar": true
         }
       }
     },
     "unplug-pipeline": {
       "baseline_recall": 0.8667,
       "n_positives": 120,
+      "baseline_fpr": 0.3167,
+      "n_benign": 120,
       "transforms": {
         "base64_with_instruction": {
           "recall": 0.9167,
           "delta": 0.05,
-          "fails_robustness_bar": false
+          "recalled": 110,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.5583,
+          "fpr_delta": 0.2417,
+          "false_positives": 67,
+          "n_benign": 120,
+          "fails_fpr_bar": true
         },
         "base64_bare": {
           "recall": 1.0,
           "delta": 0.1333,
-          "fails_robustness_bar": false
+          "recalled": 120,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.9917,
+          "fpr_delta": 0.675,
+          "false_positives": 119,
+          "n_benign": 120,
+          "fails_fpr_bar": true
         },
         "leetspeak": {
           "recall": 0.85,
           "delta": -0.0167,
-          "fails_robustness_bar": false
+          "recalled": 102,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.3917,
+          "fpr_delta": 0.075,
+          "false_positives": 47,
+          "n_benign": 120,
+          "fails_fpr_bar": false
         },
         "homoglyph": {
           "recall": 1.0,
           "delta": 0.1333,
-          "fails_robustness_bar": false
+          "recalled": 120,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 1.0,
+          "fpr_delta": 0.6833,
+          "false_positives": 120,
+          "n_benign": 120,
+          "fails_fpr_bar": true
         },
         "zero_width": {
           "recall": 0.9417,
           "delta": 0.075,
-          "fails_robustness_bar": false
+          "recalled": 113,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.7833,
+          "fpr_delta": 0.4667,
+          "false_positives": 94,
+          "n_benign": 120,
+          "fails_fpr_bar": true
         },
         "whitespace": {
           "recall": 0.8417,
           "delta": -0.025,
-          "fails_robustness_bar": false
+          "recalled": 101,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.4583,
+          "fpr_delta": 0.1417,
+          "false_positives": 55,
+          "n_benign": 120,
+          "fails_fpr_bar": false
         },
         "carrier": {
           "recall": 1.0,
           "delta": 0.1333,
-          "fails_robustness_bar": false
+          "recalled": 120,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.9917,
+          "fpr_delta": 0.675,
+          "false_positives": 119,
+          "n_benign": 120,
+          "fails_fpr_bar": true
         }
       }
     },
     "protectai": {
       "baseline_recall": 0.8417,
       "n_positives": 120,
+      "baseline_fpr": 0.575,
+      "n_benign": 120,
       "transforms": {
         "base64_with_instruction": {
           "recall": 1.0,
           "delta": 0.1583,
-          "fails_robustness_bar": false
+          "recalled": 120,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 1.0,
+          "fpr_delta": 0.425,
+          "false_positives": 120,
+          "n_benign": 120,
+          "fails_fpr_bar": true
         },
         "base64_bare": {
           "recall": 0.0,
           "delta": -0.8417,
-          "fails_robustness_bar": true
+          "recalled": 0,
+          "n_positives": 120,
+          "fails_robustness_bar": true,
+          "fpr": 0.0,
+          "fpr_delta": -0.575,
+          "false_positives": 0,
+          "n_benign": 120,
+          "fails_fpr_bar": false
         },
         "leetspeak": {
           "recall": 1.0,
           "delta": 0.1583,
-          "fails_robustness_bar": false
+          "recalled": 120,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.9917,
+          "fpr_delta": 0.4167,
+          "false_positives": 119,
+          "n_benign": 120,
+          "fails_fpr_bar": true
         },
         "homoglyph": {
           "recall": 0.9583,
           "delta": 0.1167,
-          "fails_robustness_bar": false
+          "recalled": 115,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.925,
+          "fpr_delta": 0.35,
+          "false_positives": 111,
+          "n_benign": 120,
+          "fails_fpr_bar": true
         },
         "zero_width": {
           "recall": 0.7917,
           "delta": -0.05,
-          "fails_robustness_bar": false
+          "recalled": 95,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.5583,
+          "fpr_delta": -0.0167,
+          "false_positives": 67,
+          "n_benign": 120,
+          "fails_fpr_bar": false
         },
         "whitespace": {
           "recall": 0.7583,
           "delta": -0.0833,
-          "fails_robustness_bar": false
+          "recalled": 91,
+          "n_positives": 120,
+          "fails_robustness_bar": false,
+          "fpr": 0.5333,
+          "fpr_delta": -0.0417,
+          "false_positives": 64,
+          "n_benign": 120,
+          "fails_fpr_bar": false
         },
         "carrier": {
           "recall": 0.45,
           "delta": -0.3917,
-          "fails_robustness_bar": true
+          "recalled": 54,
+          "n_positives": 120,
+          "fails_robustness_bar": true,
+          "fpr": 0.1083,
+          "fpr_delta": -0.4667,
+          "false_positives": 13,
+          "n_benign": 120,
+          "fails_fpr_bar": false
         }
       }
     }

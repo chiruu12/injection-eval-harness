@@ -27,16 +27,20 @@
 
 F1 gap, control minus primary: regex-floor -0.129, unplug-model -0.097, unplug-pipeline -0.100, protectai -0.160
 
-### Controlled shift: seeded obfuscation of the 120 test positives
+### Controlled shift: seeded obfuscation of the 120 test positives and 120 test benign rows
 
-| system | baseline R | base64_with_instruction | base64_bare | leetspeak | homoglyph | zero_width | whitespace | carrier |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| regex-floor | 0.250 | 1.000 (+0.750) | 0.000 (-0.250) ! | 0.000 (-0.250) ! | 0.017 (-0.233) ! | 0.133 (-0.117) | 0.133 (-0.117) | 0.250 (+0.000) |
-| unplug-model | 0.792 | 0.000 (-0.792) ! | 0.992 (+0.200) | 0.633 (-0.158) | 0.708 (-0.083) | 0.867 (+0.075) | 0.808 (+0.017) | 1.000 (+0.208) |
-| unplug-pipeline | 0.867 | 0.917 (+0.050) | 1.000 (+0.133) | 0.850 (-0.017) | 1.000 (+0.133) | 0.942 (+0.075) | 0.842 (-0.025) | 1.000 (+0.133) |
-| protectai | 0.842 | 1.000 (+0.158) | 0.000 (-0.842) ! | 1.000 (+0.158) | 0.958 (+0.117) | 0.792 (-0.050) | 0.758 (-0.083) | 0.450 (-0.392) ! |
+| system | arm | baseline | base64_with_instruction | base64_bare | leetspeak | homoglyph | zero_width | whitespace | carrier |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| regex-floor | R | 0.250 | 1.000 (+0.750) | 0.000 (-0.250) ! | 0.000 (-0.250) ! | 0.017 (-0.233) ! | 0.133 (-0.117) | 0.133 (-0.117) | 0.250 (+0.000) |
+| regex-floor | FPR | 0.033 | 1.000 (+0.967) ! | 0.000 (-0.033) | 0.000 (-0.033) | 0.000 (-0.033) | 0.000 (-0.033) | 0.000 (-0.033) | 0.033 (+0.000) |
+| unplug-model | R | 0.792 | 0.000 (-0.792) ! | 0.992 (+0.200) | 0.633 (-0.158) | 0.708 (-0.083) | 0.867 (+0.075) | 0.808 (+0.017) | 1.000 (+0.208) |
+| unplug-model | FPR | 0.200 | 0.008 (-0.192) | 0.958 (+0.758) ! | 0.700 (+0.500) ! | 0.567 (+0.367) ! | 0.450 (+0.250) ! | 0.250 (+0.050) | 0.942 (+0.742) ! |
+| unplug-pipeline | R | 0.867 | 0.917 (+0.050) | 1.000 (+0.133) | 0.850 (-0.017) | 1.000 (+0.133) | 0.942 (+0.075) | 0.842 (-0.025) | 1.000 (+0.133) |
+| unplug-pipeline | FPR | 0.317 | 0.558 (+0.242) ! | 0.992 (+0.675) ! | 0.392 (+0.075) | 1.000 (+0.683) ! | 0.783 (+0.467) ! | 0.458 (+0.142) | 0.992 (+0.675) ! |
+| protectai | R | 0.842 | 1.000 (+0.158) | 0.000 (-0.842) ! | 1.000 (+0.158) | 0.958 (+0.117) | 0.792 (-0.050) | 0.758 (-0.083) | 0.450 (-0.392) ! |
+| protectai | FPR | 0.575 | 1.000 (+0.425) ! | 0.000 (-0.575) | 0.992 (+0.417) ! | 0.925 (+0.350) ! | 0.558 (-0.017) | 0.533 (-0.042) | 0.108 (-0.467) |
 
-`!` marks a drop of more than 20 absolute points, the pre-registered bar.
+`!` on R marks a drop of more than 20 absolute points, the pre-registered bar. `!` on FPR marks a rise of more than 20 absolute points, the companion bar.
 
 ### Span localisation, carrier transform only
 
