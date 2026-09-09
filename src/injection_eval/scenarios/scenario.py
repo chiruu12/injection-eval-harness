@@ -47,6 +47,17 @@ class ScriptedScenario:
     tool_specs: tuple[ToolSpec, ...]
     triggers: tuple[tuple[str, ToolCall], ...] = ()
     attack_tool: str = ""
+    # What the user asks on turn 0. Part of the Scenario protocol: the runner
+    # puts it on the first turn, and a guard placed at the user-input boundary
+    # inspects this rather than any tool output. Left empty it falls back to the
+    # description, which in this corpus is already a one-line statement of what
+    # the user wants. A scenario with a more natural phrasing should pass it.
+    opening_request: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.opening_request:
+            # frozen dataclass, so the derived default is written the long way.
+            object.__setattr__(self, "opening_request", self.description)
 
     def build_agent(self) -> Agent:
         """The scripted agent for this episode, starting at the first plan step."""

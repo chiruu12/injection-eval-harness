@@ -8,7 +8,13 @@ from ..core.contracts import Action, Policy, Span, Verdict
 
 # Vendor-published document thresholds. Changing these changes every thresholded
 # number in results/results.json.
-_REGEX_FLOOR_THRESHOLD = 0.5
+# One pattern hit fires. The floor scores min(1, hits / 3), so this must sit
+# below 1/3 to mean what its label says. It was 0.5 until an adversarial review
+# pointed out that 0.5 silently requires TWO hits, which turned a literature
+# baseline into a strawman: recall 0.025 instead of 0.250, on the same patterns.
+# The floor exists to be a fair thing to lose to, so it gets its honest
+# operating point.
+_REGEX_FLOOR_THRESHOLD = 1.0 / 3.0 - 1e-9
 _UNPLUG_DOC_THRESHOLD = 0.9
 _UNPLUG_SPAN_THRESHOLD = 0.45
 _UNPLUG_PIPELINE_THRESHOLD = 0.5

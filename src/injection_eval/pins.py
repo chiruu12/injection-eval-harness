@@ -38,9 +38,11 @@ DATASETS: dict[str, DatasetPin] = {
         published="2026-07-13",
         role="primary",
         note=(
-            "Published after every model under test, so contamination is ruled "
-            "out by date. Paired: each attack has a benign twin sharing asset, "
-            "role, tool and topic."
+            "Published after every model under test. That constrains these Hub "
+            "repositories only: the set is synthetic_curated, so upload date is "
+            "not creation date and says nothing about what it was derived from. "
+            "Treat publication order as a weak control, not a firewall. Paired: "
+            "each attack has a benign twin sharing asset, role, tool and topic."
         ),
     ),
     "deepset": DatasetPin(

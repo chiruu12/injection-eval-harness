@@ -59,8 +59,11 @@ split. Almost certainly in the training mix of every detector on the Hub. Includ
 precisely so the gap between the two tables is visible, and labelled as such in the
 output. This is not a second result, it is a control.
 
-**Threshold selection.** Thresholds are fit on the upstream *validation* split (120 rows)
-only. The test split is touched once, by `make table`. No threshold is tuned on test.
+**Threshold selection.** Every threshold in the reported table is the vendor's own
+published operating point, taken from the model card. Nothing is fitted. The validation
+split is scored and reported but no search runs over it, so an earlier version of this
+sentence claiming thresholds were "fit on validation" was describing work the code does
+not do. The test split is touched once, by `make table`, and no threshold is tuned on it.
 
 ## Metrics
 

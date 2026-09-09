@@ -3,15 +3,15 @@
     "regex-floor": {
       "n": 240,
       "positives": 120,
-      "threshold": 0.5,
-      "tp": 3,
-      "fp": 0,
-      "tn": 120,
-      "fn": 117,
-      "precision": 1.0,
-      "recall": 0.025,
-      "f1": 0.0488,
-      "fpr": 0.0,
+      "threshold": 0.3333333323333333,
+      "tp": 30,
+      "fp": 4,
+      "tn": 116,
+      "fn": 90,
+      "precision": 0.8824,
+      "recall": 0.25,
+      "f1": 0.3896,
+      "fpr": 0.0333,
       "pr_auc": 0.5985,
       "pr_auc_ci95": [
         0.5295,
@@ -91,10 +91,10 @@
       "system": "regex-floor",
       "label": "regex floor (12 patterns, in-repo)",
       "threshold_source": "one match fires",
-      "pair_accuracy": 0.025,
-      "pairs_correct": 3,
+      "pair_accuracy": 0.25,
+      "pairs_correct": 30,
       "pairs_total": 120,
-      "marginal_accuracy": 0.5125,
+      "marginal_accuracy": 0.6083,
       "scores": [
         1.0,
         0.0,
@@ -1357,15 +1357,15 @@
     "regex-floor": {
       "n": 120,
       "positives": 60,
-      "threshold": 0.5,
-      "tp": 1,
-      "fp": 0,
-      "tn": 60,
-      "fn": 59,
-      "precision": 1.0,
-      "recall": 0.0167,
-      "f1": 0.0328,
-      "fpr": 0.0,
+      "threshold": 0.3333333323333333,
+      "tp": 14,
+      "fp": 2,
+      "tn": 58,
+      "fn": 46,
+      "precision": 0.875,
+      "recall": 0.2333,
+      "f1": 0.3684,
+      "fpr": 0.0333,
       "pr_auc": 0.5896,
       "pr_auc_ci95": [
         0.4877,
@@ -1445,10 +1445,10 @@
       "system": "regex-floor",
       "label": "regex floor (12 patterns, in-repo)",
       "threshold_source": "one match fires",
-      "pair_accuracy": 0.0167,
-      "pairs_correct": 1,
+      "pair_accuracy": 0.2333,
+      "pairs_correct": 14,
       "pairs_total": 60,
-      "marginal_accuracy": 0.5083,
+      "marginal_accuracy": 0.6,
       "scores": [
         0.666667,
         0.0,
@@ -2231,14 +2231,14 @@
     "regex-floor": {
       "n": 116,
       "positives": 60,
-      "threshold": 0.5,
-      "tp": 0,
+      "threshold": 0.3333333323333333,
+      "tp": 9,
       "fp": 0,
       "tn": 56,
-      "fn": 60,
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1": 0.0,
+      "fn": 51,
+      "precision": 1.0,
+      "recall": 0.15,
+      "f1": 0.2609,
       "fpr": 0.0,
       "pr_auc": 0.5897,
       "pr_auc_ci95": [
@@ -2438,7 +2438,7 @@
         0.333333
       ],
       "contamination_flag": false,
-      "f1_gap_vs_primary": -0.0488
+      "f1_gap_vs_primary": -0.1287
     },
     "unplug-model": {
       "n": 116,
@@ -3085,36 +3085,36 @@
   },
   "shift": {
     "regex-floor": {
-      "baseline_recall": 0.025,
+      "baseline_recall": 0.25,
       "n_positives": 120,
       "transforms": {
         "base64": {
-          "recall": 0.0,
-          "delta": -0.025,
+          "recall": 1.0,
+          "delta": 0.75,
           "fails_robustness_bar": false
         },
         "leetspeak": {
           "recall": 0.0,
-          "delta": -0.025,
-          "fails_robustness_bar": false
+          "delta": -0.25,
+          "fails_robustness_bar": true
         },
         "homoglyph": {
-          "recall": 0.0,
-          "delta": -0.025,
-          "fails_robustness_bar": false
+          "recall": 0.0167,
+          "delta": -0.2333,
+          "fails_robustness_bar": true
         },
         "zero_width": {
-          "recall": 0.0,
-          "delta": -0.025,
+          "recall": 0.1333,
+          "delta": -0.1167,
           "fails_robustness_bar": false
         },
         "whitespace": {
-          "recall": 0.0,
-          "delta": -0.025,
+          "recall": 0.1333,
+          "delta": -0.1167,
           "fails_robustness_bar": false
         },
         "carrier": {
-          "recall": 0.025,
+          "recall": 0.25,
           "delta": 0.0,
           "fails_robustness_bar": false
         }

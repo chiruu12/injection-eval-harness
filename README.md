@@ -16,7 +16,13 @@ committed before any result existed.
 Prompt-injection detectors publish recall and false-positive rates measured by
 their own harness on their own held-out data. What do those numbers look like
 when an independent harness runs them on public data published *after* the model
-shipped, so contamination is ruled out by date rather than by assertion?
+shipped?
+
+Publication order is a weak control, not a firewall, and this repo is now explicit
+about that. The primary set is entirely synthetic and curated, so its Hub upload
+date is not its creation date and says nothing about the corpora it was derived
+from. See finding 1, which reports the contamination check as underpowered rather
+than as a refutation.
 
 ## Threat model
 
@@ -38,7 +44,7 @@ than on intent scores well on unpaired data and is useless in production.
 
 | id | what it is | operating point |
 |---|---|---|
-| `regex-floor` | 12 patterns from the public injection literature, in this repo | one match fires |
+| `regex-floor` | 12 patterns from the public injection literature, in this repo | one pattern hit fires |
 | `unplug-model` | `Unplug-AI/unplug-tiny-v1` document head, 70.7M, regex stage disabled | doc 0.9, from the model card |
 | `unplug-pipeline` | the Unplug SDK as a caller gets it, `Guard.with_tiny()` | SDK default block |
 | `protectai` | `protectai/deberta-v3-base-prompt-injection-v2`, 184M | argmax |
@@ -62,8 +68,10 @@ resolves to `main`.
 | `deepset/prompt-injections` | 116 test | 2023-05-17 | contamination control |
 
 The primary set was published after `unplug-tiny-v1` (2026-06-10) and after
-`deberta-v3-base-prompt-injection-v2` (2024-04). Neither model can have trained
-on it. `tests/test_pins.py` asserts that ordering, so if a pin is ever bumped to
+`deberta-v3-base-prompt-injection-v2` (2024-04). That constrains those two Hub
+repositories and nothing else: it does not constrain the ancestors of a synthetic
+corpus, the model that generated it, or stylistic overlap with a private training
+mix. For unplug-tiny-v1 the gap is 33 days, in Unplug's own product domain. `tests/test_pins.py` asserts that ordering, so if a pin is ever bumped to
 a newer model the test fails rather than the claim quietly becoming false.
 
 The upstream 840/120/240 split is used exactly as published. Thresholds are read
