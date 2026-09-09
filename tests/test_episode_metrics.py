@@ -162,14 +162,14 @@ def test_guard_delta_refuses_mismatched_scenario_keys():
     with_guard, without_guard = paired_runs()
     extra = benign_episode("b2", completed=True, guard="none")
     with pytest.raises(ValueError):
-        guard_delta(with_guard, without_guard + [extra])
+        guard_delta(with_guard, [*without_guard, extra])
 
 
 def test_guard_delta_refuses_duplicate_keys_within_a_list():
     # a repeated key would pair two runs against one
     with_guard, without_guard = paired_runs()
     with pytest.raises(ValueError):
-        guard_delta(with_guard + [attack_episode("a1", succeeded=True)], without_guard)
+        guard_delta([*with_guard, attack_episode("a1", succeeded=True)], without_guard)
 
 
 def test_detection_turn_distribution_counts_first_fires():
