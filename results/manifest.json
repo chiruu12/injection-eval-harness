@@ -1,12 +1,12 @@
 {
-  "generated_utc": "2026-09-09T14:01:39+00:00",
-  "harness_git_sha": "c88173d57cf96bd5c2e7c6d3c68234d39890fae1",
+  "generated_utc": "2026-09-09T17:30:03+00:00",
+  "harness_git_sha": "5cbfcc0ce1c2415b595486b9d0dd3a90d36dee46",
   "seed": 20260912,
-  "python": "3.12.12",
+  "python": "3.12.11",
   "platform": "macOS-26.5.1-arm64-arm-64bit",
   "packages": {
     "torch": "2.14.0",
-    "transformers": "5.16.1",
+    "transformers": "5.17.0",
     "datasets": "5.0.1",
     "scikit-learn": "1.9.0",
     "unplug-ai": "0.6.0"

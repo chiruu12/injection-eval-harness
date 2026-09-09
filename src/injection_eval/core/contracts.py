@@ -21,7 +21,7 @@ Two rules keep it that way.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
 # --------------------------------------------------------------------------- #
@@ -89,7 +89,7 @@ class SpanDetector(Detector, Protocol):
 # --------------------------------------------------------------------------- #
 
 
-class Action(str, Enum):
+class Action(StrEnum):
     """What a guard decided to do with a piece of untrusted content."""
 
     ALLOW = "allow"
@@ -201,7 +201,7 @@ class Tool(Protocol):
 # --------------------------------------------------------------------------- #
 
 
-class TurnKind(str, Enum):
+class TurnKind(StrEnum):
     USER = "user"
     AGENT = "agent"
     TOOL = "tool"

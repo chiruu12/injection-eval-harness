@@ -3089,6 +3089,8 @@
       "n_positives": 120,
       "baseline_fpr": 0.0333,
       "n_benign": 120,
+      "baseline_pr_auc": 0.5985,
+      "baseline_roc_auc": 0.6088,
       "transforms": {
         "base64_with_instruction": {
           "recall": 1.0,
@@ -3100,7 +3102,16 @@
           "fpr_delta": 0.9667,
           "false_positives": 120,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.5,
+          "pr_auc_ci95": [
+            0.4333,
+            0.5625
+          ],
+          "pr_auc_delta": -0.0985,
+          "roc_auc": 0.5,
+          "roc_auc_delta": -0.1088,
+          "classification": "capability"
         },
         "base64_bare": {
           "recall": 0.0,
@@ -3112,7 +3123,16 @@
           "fpr_delta": -0.0333,
           "false_positives": 0,
           "n_benign": 120,
-          "fails_fpr_bar": false
+          "fails_fpr_bar": false,
+          "pr_auc": 0.5,
+          "pr_auc_ci95": [
+            0.4333,
+            0.5625
+          ],
+          "pr_auc_delta": -0.0985,
+          "roc_auc": 0.5,
+          "roc_auc_delta": -0.1088,
+          "classification": "capability"
         },
         "leetspeak": {
           "recall": 0.0,
@@ -3124,7 +3144,16 @@
           "fpr_delta": -0.0333,
           "false_positives": 0,
           "n_benign": 120,
-          "fails_fpr_bar": false
+          "fails_fpr_bar": false,
+          "pr_auc": 0.5,
+          "pr_auc_ci95": [
+            0.4333,
+            0.5625
+          ],
+          "pr_auc_delta": -0.0985,
+          "roc_auc": 0.5,
+          "roc_auc_delta": -0.1088,
+          "classification": "capability"
         },
         "homoglyph": {
           "recall": 0.0167,
@@ -3136,7 +3165,16 @@
           "fpr_delta": -0.0333,
           "false_positives": 0,
           "n_benign": 120,
-          "fails_fpr_bar": false
+          "fails_fpr_bar": false,
+          "pr_auc": 0.5083,
+          "pr_auc_ci95": [
+            0.4429,
+            0.5699
+          ],
+          "pr_auc_delta": -0.0902,
+          "roc_auc": 0.5083,
+          "roc_auc_delta": -0.1004,
+          "classification": "threshold"
         },
         "zero_width": {
           "recall": 0.0,
@@ -3148,7 +3186,16 @@
           "fpr_delta": -0.0333,
           "false_positives": 0,
           "n_benign": 120,
-          "fails_fpr_bar": false
+          "fails_fpr_bar": false,
+          "pr_auc": 0.5,
+          "pr_auc_ci95": [
+            0.4333,
+            0.5625
+          ],
+          "pr_auc_delta": -0.0985,
+          "roc_auc": 0.5,
+          "roc_auc_delta": -0.1088,
+          "classification": "capability"
         },
         "whitespace": {
           "recall": 0.0,
@@ -3160,7 +3207,16 @@
           "fpr_delta": -0.0333,
           "false_positives": 0,
           "n_benign": 120,
-          "fails_fpr_bar": false
+          "fails_fpr_bar": false,
+          "pr_auc": 0.5,
+          "pr_auc_ci95": [
+            0.4333,
+            0.5625
+          ],
+          "pr_auc_delta": -0.0985,
+          "roc_auc": 0.5,
+          "roc_auc_delta": -0.1088,
+          "classification": "capability"
         },
         "carrier": {
           "recall": 0.25,
@@ -3172,7 +3228,16 @@
           "fpr_delta": 0.0,
           "false_positives": 4,
           "n_benign": 120,
-          "fails_fpr_bar": false
+          "fails_fpr_bar": false,
+          "pr_auc": 0.5985,
+          "pr_auc_ci95": [
+            0.5246,
+            0.6661
+          ],
+          "pr_auc_delta": 0.0,
+          "roc_auc": 0.6088,
+          "roc_auc_delta": 0.0,
+          "classification": "intact"
         }
       }
     },
@@ -3181,6 +3246,8 @@
       "n_positives": 120,
       "baseline_fpr": 0.2,
       "n_benign": 120,
+      "baseline_pr_auc": 0.8582,
+      "baseline_roc_auc": 0.8567,
       "transforms": {
         "base64_with_instruction": {
           "recall": 0.0,
@@ -3192,7 +3259,16 @@
           "fpr_delta": -0.1917,
           "false_positives": 1,
           "n_benign": 120,
-          "fails_fpr_bar": false
+          "fails_fpr_bar": false,
+          "pr_auc": 0.4898,
+          "pr_auc_ci95": [
+            0.415,
+            0.5869
+          ],
+          "pr_auc_delta": -0.3684,
+          "roc_auc": 0.4773,
+          "roc_auc_delta": -0.3794,
+          "classification": "capability"
         },
         "base64_bare": {
           "recall": 0.9917,
@@ -3204,7 +3280,16 @@
           "fpr_delta": 0.7583,
           "false_positives": 115,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.5463,
+          "pr_auc_ci95": [
+            0.4598,
+            0.6473
+          ],
+          "pr_auc_delta": -0.3119,
+          "roc_auc": 0.5501,
+          "roc_auc_delta": -0.3066,
+          "classification": "capability"
         },
         "leetspeak": {
           "recall": 0.6333,
@@ -3216,7 +3301,16 @@
           "fpr_delta": 0.5,
           "false_positives": 84,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.4541,
+          "pr_auc_ci95": [
+            0.3855,
+            0.541
+          ],
+          "pr_auc_delta": -0.4041,
+          "roc_auc": 0.4513,
+          "roc_auc_delta": -0.4054,
+          "classification": "capability"
         },
         "homoglyph": {
           "recall": 0.7083,
@@ -3228,7 +3322,16 @@
           "fpr_delta": 0.3667,
           "false_positives": 68,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.6049,
+          "pr_auc_ci95": [
+            0.5166,
+            0.6955
+          ],
+          "pr_auc_delta": -0.2533,
+          "roc_auc": 0.6071,
+          "roc_auc_delta": -0.2496,
+          "classification": "capability"
         },
         "zero_width": {
           "recall": 1.0,
@@ -3240,7 +3343,16 @@
           "fpr_delta": 0.8,
           "false_positives": 120,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.6305,
+          "pr_auc_ci95": [
+            0.5415,
+            0.7251
+          ],
+          "pr_auc_delta": -0.2277,
+          "roc_auc": 0.6091,
+          "roc_auc_delta": -0.2476,
+          "classification": "capability"
         },
         "whitespace": {
           "recall": 0.9083,
@@ -3252,7 +3364,16 @@
           "fpr_delta": 0.6,
           "false_positives": 96,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.6759,
+          "pr_auc_ci95": [
+            0.5871,
+            0.754
+          ],
+          "pr_auc_delta": -0.1823,
+          "roc_auc": 0.6469,
+          "roc_auc_delta": -0.2098,
+          "classification": "capability"
         },
         "carrier": {
           "recall": 1.0,
@@ -3264,7 +3385,16 @@
           "fpr_delta": 0.7417,
           "false_positives": 113,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.7727,
+          "pr_auc_ci95": [
+            0.6954,
+            0.8457
+          ],
+          "pr_auc_delta": -0.0855,
+          "roc_auc": 0.7856,
+          "roc_auc_delta": -0.0712,
+          "classification": "capability"
         }
       }
     },
@@ -3273,6 +3403,8 @@
       "n_positives": 120,
       "baseline_fpr": 0.3167,
       "n_benign": 120,
+      "baseline_pr_auc": 0.7426,
+      "baseline_roc_auc": 0.7947,
       "transforms": {
         "base64_with_instruction": {
           "recall": 0.9167,
@@ -3284,7 +3416,16 @@
           "fpr_delta": 0.2417,
           "false_positives": 67,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.6106,
+          "pr_auc_ci95": [
+            0.5261,
+            0.7021
+          ],
+          "pr_auc_delta": -0.132,
+          "roc_auc": 0.6632,
+          "roc_auc_delta": -0.1315,
+          "classification": "capability"
         },
         "base64_bare": {
           "recall": 1.0,
@@ -3296,7 +3437,16 @@
           "fpr_delta": 0.675,
           "false_positives": 119,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.3936,
+          "pr_auc_ci95": [
+            0.3282,
+            0.4703
+          ],
+          "pr_auc_delta": -0.349,
+          "roc_auc": 0.2807,
+          "roc_auc_delta": -0.514,
+          "classification": "capability"
         },
         "leetspeak": {
           "recall": 0.85,
@@ -3308,7 +3458,16 @@
           "fpr_delta": 0.075,
           "false_positives": 47,
           "n_benign": 120,
-          "fails_fpr_bar": false
+          "fails_fpr_bar": false,
+          "pr_auc": 0.692,
+          "pr_auc_ci95": [
+            0.6055,
+            0.7814
+          ],
+          "pr_auc_delta": -0.0506,
+          "roc_auc": 0.7369,
+          "roc_auc_delta": -0.0577,
+          "classification": "intact"
         },
         "homoglyph": {
           "recall": 1.0,
@@ -3320,7 +3479,16 @@
           "fpr_delta": 0.6833,
           "false_positives": 120,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.5167,
+          "pr_auc_ci95": [
+            0.451,
+            0.5794
+          ],
+          "pr_auc_delta": -0.226,
+          "roc_auc": 0.5167,
+          "roc_auc_delta": -0.278,
+          "classification": "capability"
         },
         "zero_width": {
           "recall": 1.0,
@@ -3332,7 +3500,16 @@
           "fpr_delta": 0.6833,
           "false_positives": 120,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.5,
+          "pr_auc_ci95": [
+            0.4333,
+            0.5625
+          ],
+          "pr_auc_delta": -0.2426,
+          "roc_auc": 0.5,
+          "roc_auc_delta": -0.2947,
+          "classification": "capability"
         },
         "whitespace": {
           "recall": 0.9417,
@@ -3344,7 +3521,16 @@
           "fpr_delta": 0.5833,
           "false_positives": 108,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.4854,
+          "pr_auc_ci95": [
+            0.4075,
+            0.5776
+          ],
+          "pr_auc_delta": -0.2572,
+          "roc_auc": 0.4876,
+          "roc_auc_delta": -0.307,
+          "classification": "capability"
         },
         "carrier": {
           "recall": 1.0,
@@ -3356,7 +3542,16 @@
           "fpr_delta": 0.675,
           "false_positives": 119,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.6484,
+          "pr_auc_ci95": [
+            0.5604,
+            0.7349
+          ],
+          "pr_auc_delta": -0.0942,
+          "roc_auc": 0.6204,
+          "roc_auc_delta": -0.1743,
+          "classification": "capability"
         }
       }
     },
@@ -3365,6 +3560,8 @@
       "n_positives": 120,
       "baseline_fpr": 0.575,
       "n_benign": 120,
+      "baseline_pr_auc": 0.7327,
+      "baseline_roc_auc": 0.72,
       "transforms": {
         "base64_with_instruction": {
           "recall": 1.0,
@@ -3376,7 +3573,16 @@
           "fpr_delta": 0.425,
           "false_positives": 120,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.5084,
+          "pr_auc_ci95": [
+            0.4379,
+            0.5853
+          ],
+          "pr_auc_delta": -0.2243,
+          "roc_auc": 0.5151,
+          "roc_auc_delta": -0.205,
+          "classification": "capability"
         },
         "base64_bare": {
           "recall": 0.0,
@@ -3388,7 +3594,16 @@
           "fpr_delta": -0.575,
           "false_positives": 0,
           "n_benign": 120,
-          "fails_fpr_bar": false
+          "fails_fpr_bar": false,
+          "pr_auc": 0.5504,
+          "pr_auc_ci95": [
+            0.4657,
+            0.6483
+          ],
+          "pr_auc_delta": -0.1823,
+          "roc_auc": 0.5554,
+          "roc_auc_delta": -0.1646,
+          "classification": "capability"
         },
         "leetspeak": {
           "recall": 1.0,
@@ -3400,7 +3615,16 @@
           "fpr_delta": 0.4167,
           "false_positives": 119,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.5892,
+          "pr_auc_ci95": [
+            0.4969,
+            0.6858
+          ],
+          "pr_auc_delta": -0.1435,
+          "roc_auc": 0.6083,
+          "roc_auc_delta": -0.1118,
+          "classification": "capability"
         },
         "homoglyph": {
           "recall": 0.9583,
@@ -3412,7 +3636,16 @@
           "fpr_delta": 0.35,
           "false_positives": 111,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.5391,
+          "pr_auc_ci95": [
+            0.4548,
+            0.6324
+          ],
+          "pr_auc_delta": -0.1936,
+          "roc_auc": 0.5483,
+          "roc_auc_delta": -0.1717,
+          "classification": "capability"
         },
         "zero_width": {
           "recall": 0.9583,
@@ -3424,7 +3657,16 @@
           "fpr_delta": 0.4083,
           "false_positives": 118,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.4676,
+          "pr_auc_ci95": [
+            0.3954,
+            0.5574
+          ],
+          "pr_auc_delta": -0.2651,
+          "roc_auc": 0.4692,
+          "roc_auc_delta": -0.2508,
+          "classification": "capability"
         },
         "whitespace": {
           "recall": 0.9833,
@@ -3436,7 +3678,16 @@
           "fpr_delta": 0.425,
           "false_positives": 120,
           "n_benign": 120,
-          "fails_fpr_bar": true
+          "fails_fpr_bar": true,
+          "pr_auc": 0.4767,
+          "pr_auc_ci95": [
+            0.4054,
+            0.5597
+          ],
+          "pr_auc_delta": -0.256,
+          "roc_auc": 0.4921,
+          "roc_auc_delta": -0.228,
+          "classification": "capability"
         },
         "carrier": {
           "recall": 0.45,
@@ -3448,7 +3699,16 @@
           "fpr_delta": -0.4667,
           "false_positives": 13,
           "n_benign": 120,
-          "fails_fpr_bar": false
+          "fails_fpr_bar": false,
+          "pr_auc": 0.7651,
+          "pr_auc_ci95": [
+            0.6877,
+            0.8316
+          ],
+          "pr_auc_delta": 0.0324,
+          "roc_auc": 0.7515,
+          "roc_auc_delta": 0.0315,
+          "classification": "threshold"
         }
       }
     }

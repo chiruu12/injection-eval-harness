@@ -66,8 +66,22 @@ def _shift_cell(
     return f"{rate:.3f} ({delta:+.3f}){mark}"
 
 
+# One letter per classification, so the AUC row carries the verdict without a
+# fourth row per system. Spelled out in the caption under the table.
+_CLASS_MARK = {"capability": "C", "threshold": "T", "intact": "-"}
+
+
+def _auc_cell(t: dict) -> str:
+    """PR-AUC, its signed delta, and the threshold-versus-capability verdict."""
+    auc = t.get("pr_auc")
+    if auc is None:
+        return str(t.get("auc_undefined", "not scored")).replace("|", "/")
+    mark = _CLASS_MARK.get(t.get("classification"), "?")
+    return f"{auc:.3f} ({t['pr_auc_delta']:+.3f}) {mark}"
+
+
 def shift_table(shift: dict) -> str:
-    """Recall and FPR per transform, adjacent so neither is quoted alone."""
+    """Recall, FPR and PR-AUC per transform, adjacent so none is quoted alone."""
     names = list(next(iter(shift.values()))["transforms"])
     head = ["system", "arm", "baseline", *names]
     lines = [_row(head), _row(["---"] * len(head))]
@@ -77,6 +91,8 @@ def shift_table(shift: dict) -> str:
         row = shift[key]
         rec_cells = [key, "R", f"{row['baseline_recall']:.3f}"]
         fpr_cells = [key, "FPR", f"{row['baseline_fpr']:.3f}"]
+        base_auc = row.get("baseline_pr_auc")
+        auc_cells = [key, "PR-AUC", "n/a" if base_auc is None else f"{base_auc:.3f}"]
         for n in names:
             t = row["transforms"][n]
             rec_cells.append(
@@ -95,8 +111,10 @@ def shift_table(shift: dict) -> str:
                     t.get("benign_skipped"),
                 )
             )
+            auc_cells.append(_auc_cell(t))
         lines.append(_row(rec_cells))
         lines.append(_row(fpr_cells))
+        lines.append(_row(auc_cells))
     return "\n".join(lines)
 
 
@@ -181,7 +199,13 @@ def main() -> None:
         rise = int(ROBUSTNESS_FPR_RISE * 100)
         out.append(
             f"\n`!` on R marks a drop of more than {drop} absolute points, the pre-registered bar. "
-            f"`!` on FPR marks a rise of more than {rise} absolute points, the companion bar."
+            f"`!` on FPR marks a rise of more than {rise} absolute points, the companion bar.\n"
+            f"\nThe PR-AUC row is threshold-free, so it separates two failures that a recall "
+            f"column shows identically. `T` is a threshold failure: the ranking survived and "
+            f"re-thresholding recovers the recall. `C` is a capability failure: the ranking "
+            f"itself degraded, or the detector now fires on the benign arm as readily as the "
+            f"attack arm, and no threshold recovers it. `-` is neither. The arms are balanced "
+            f"at {n_pos} against {n_ben}, so 0.500 is chance."
         )
     if "spans_carrier" in r:
         s = r["spans_carrier"]

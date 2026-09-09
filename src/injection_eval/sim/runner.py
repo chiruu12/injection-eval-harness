@@ -8,7 +8,7 @@ this loop rather than forking it.
 from __future__ import annotations
 
 from dataclasses import replace
-from enum import Enum
+from enum import StrEnum
 
 from ..core.contracts import (
     Action,
@@ -27,7 +27,7 @@ from ..core.contracts import (
 BLOCKED_NOTICE = "blocked by guard"
 
 
-class GuardPlacement(str, Enum):
+class GuardPlacement(StrEnum):
     """Which untrusted boundary the guard sits on for this run."""
 
     NONE = "none"

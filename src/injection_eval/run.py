@@ -284,7 +284,13 @@ def evaluate_shift(
                         "roc_auc": round(rank["roc_auc"], 4),
                         "roc_auc_delta": round(rank["roc_auc"] - base_rank["roc_auc"], 4),
                         "classification": classify_shift_failure(
-                            base_recall, rec, base_rank["pr_auc"], rank["pr_auc"]
+                            base_recall,
+                            rec,
+                            base_rank["pr_auc"],
+                            rank["pr_auc"],
+                            base_fpr,
+                            fpr,
+                            len(pos_scores) / (len(pos_scores) + len(ben_scores)),
                         ),
                     }
                 )
