@@ -1,14 +1,16 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "true",
-  "buildCommand": "true",
+  "buildCommand": "python3 scripts/build_site.py",
+  "outputDirectory": "public",
   "functions": {
     "api/index.py": {
       "includeFiles": "results/**"
     }
   },
   "rewrites": [
-    { "source": "/", "destination": "/api/index?path=/" },
-    { "source": "/(.*)", "destination": "/api/index?path=/$1" }
+    { "source": "/results.json", "destination": "/api/index?path=/results.json" },
+    { "source": "/manifest.json", "destination": "/api/index?path=/manifest.json" },
+    { "source": "/tables.md", "destination": "/api/index?path=/tables.md" }
   ]
 }

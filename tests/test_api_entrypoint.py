@@ -25,6 +25,8 @@ def _load():
 
 
 api = _load()
+_body = api._body
+_norm = api._normalise
 
 
 def _call(path: str, method: str = "GET") -> tuple[str, dict[str, str], bytes]:
@@ -139,9 +141,35 @@ def test_every_rewrite_in_the_config_forwards_the_original_path():
     rewrites = config["rewrites"]
     assert rewrites, "no rewrites; requests would never reach the function"
     for rule in rewrites:
-        assert rule["destination"].startswith("/api/index?path="), rule
-    assert rewrites[-1]["source"] == "/(.*)"
-    assert rewrites[-1]["destination"] == "/api/index?path=/$1"
+        assert rule["destination"] == f"/api/index?path={rule['source']}", rule
+        assert _body(_norm(rule["source"]))[0] == 200, rule
+
+
+def test_every_served_route_has_a_rewrite():
+    """A route the handler knows and the config does not is unreachable in production."""
+    config = json.loads((ROOT / "vercel.json").read_text())
+    sources = {rule["source"] for rule in config["rewrites"]}
+    for path in api._ROUTES:
+        assert path in sources, f"{path} is served by the handler and not routed to it"
+
+
+def test_the_page_is_built_and_not_served_by_the_function():
+    """`/` is a static file from the build, so the function must not claim it."""
+    config = json.loads((ROOT / "vercel.json").read_text())
+    assert config["buildCommand"] == "python3 scripts/build_site.py"
+    assert config["outputDirectory"] == "public"
+    assert "/" not in {rule["source"] for rule in config["rewrites"]}
+
+
+def test_the_build_script_is_not_excluded_from_the_deployment():
+    """.vercelignore excluding what buildCommand runs fails the deploy, not a test."""
+    ignored = [
+        line.strip()
+        for line in (ROOT / ".vercelignore").read_text().splitlines()
+        if line.strip() and not line.startswith("#")
+    ]
+    for needed in ("scripts/", "results/", "api/", "public/"):
+        assert needed not in ignored, f".vercelignore drops {needed}, which the build needs"
 
 
 def test_a_path_without_a_leading_slash_is_still_matched():
@@ -188,3 +216,40 @@ def test_errors_are_never_cached():
 def test_success_is_cached():
     _, headers, _ = _call("/results.json")
     assert "s-maxage" in headers["Cache-Control"]
+
+
+def test_the_page_quotes_only_numbers_that_are_in_results_json():
+    """The page is generated, so a figure it shows and results.json does not is a bug."""
+    import re
+    import subprocess
+
+    subprocess.run(
+        [str(ROOT / ".venv" / "bin" / "python"), str(ROOT / "scripts" / "build_site.py")],
+        check=True,
+        capture_output=True,
+    )
+    page = (ROOT / "public" / "index.html").read_text()
+    results = json.loads((ROOT / "results" / "results.json").read_text())
+
+    known: set[str] = set()
+
+    def collect(node: object) -> None:
+        if isinstance(node, dict):
+            for value in node.values():
+                collect(value)
+        elif isinstance(node, list):
+            for value in node:
+                collect(value)
+        elif isinstance(node, float):
+            known.add(f"{node:.3f}")
+            known.add(f"{node:+.3f}")
+
+    collect(results)
+    # Only the generated cells, which carry three decimals inside a table or an
+    # svg text node. Prose is written by hand and checked by review.
+    cells = re.findall(r"<b>(\d\.\d{3})</b>", page) + re.findall(
+        r'class="(?:strong|val)"[^>]*>([+-]?\d\.\d{3})', page
+    )
+    assert cells, "no generated numeric cells found; the selector is wrong"
+    unknown = sorted({c for c in cells if c not in known})
+    assert not unknown, f"page shows numbers absent from results.json: {unknown}"

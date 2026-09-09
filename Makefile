@@ -35,3 +35,6 @@ docker:
 
 clean:
 	rm -rf results/*.json
+
+site:
+	$(PY) scripts/build_site.py

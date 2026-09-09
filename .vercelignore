@@ -1,11 +1,10 @@
-# The serverless function is stdlib only and reads results/ at request time.
-# Everything below is the harness itself, which has no business in a bundle
-# whose only job is to hand back a JSON file.
+# The page is built at deploy time by scripts/build_site.py from results/, and
+# the function serves those same files. Everything else is the harness, which has
+# no business in a bundle whose only job is to render a table it already has.
 .github/
 .venv/
 data/
 docs/
-scripts/
 src/
 tests/
 uv.lock
