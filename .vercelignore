@@ -1,0 +1,13 @@
+# The serverless function is stdlib only and reads results/ at request time.
+# Everything below is the harness itself, which has no business in a bundle
+# whose only job is to hand back a JSON file.
+.github/
+.venv/
+data/
+docs/
+scripts/
+src/
+tests/
+uv.lock
+Dockerfile
+Makefile
