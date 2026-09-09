@@ -30,7 +30,6 @@ def _split(n: int = 4) -> Split:
                 text=f"INJECT payload {i}",
                 label=1,
                 pair_id=f"pair{i}",
-                family="test",
             )
         )
         examples.append(
@@ -39,7 +38,6 @@ def _split(n: int = 4) -> Split:
                 text=f"ordinary text {i}",
                 label=0,
                 pair_id=f"pair{i}",
-                family="test",
             )
         )
     return Split("boundary_pairs", "test", examples)
