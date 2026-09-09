@@ -153,6 +153,20 @@ def pair_accuracy(
     return (ok / total if total else 0.0), ok, total
 
 
+def marginal_accuracy(
+    labels: dict[str, int], scores: dict[str, float], threshold: float
+) -> tuple[float, int, int]:
+    """Per-row correctness at the operating threshold, reported next to pair accuracy.
+
+    The boundary test is a gap between this number and pair accuracy. Computing
+    it here, from the same maps pair_accuracy reads, keeps that gap a property
+    of the metrics module rather than of whoever assembled the results dict.
+    """
+    total = len(labels)
+    ok = sum((scores[uid] >= threshold) == (labels[uid] == 1) for uid in labels)
+    return (ok / total if total else 0.0), ok, total
+
+
 def summarise(
     y_true: list[int], y_score: list[float], threshold: float, seed: int
 ) -> dict:

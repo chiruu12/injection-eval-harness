@@ -46,6 +46,26 @@ unplug-model fired on 120/120 carrier documents. Character IoU against the known
 
 Of the primary test rows that produced any finding, 14.8% were decided by the regex stage alone and the checkpoint was never consulted (21 regex-only, 121 reached the model, 98 no finding).
 
+### Episodes: attack success with the guard off versus on the tool-output boundary
+
+| system | ASR off | ASR on | utility | late det | never-fired |
+| --- | --- | --- | --- | --- | --- |
+| regex-floor | 1.000 | 0.308 (-0.692) | 1.000 (+0.000) | 0.000 | 0.474 |
+| unplug-model | 1.000 | 0.231 (-0.769) | 1.000 (+0.000) | 0.154 | 0.263 |
+| unplug-pipeline | 1.000 | 0.077 (-0.923) | 1.000 (+0.000) | 0.154 | 0.053 |
+| protectai | 1.000 | 0.846 (-0.154) | 1.000 (+0.000) | 0.077 | 0.895 |
+
+ASR on and utility show the signed delta versus the unguarded run. Utility is task completion on the benign controls. Late detection and never-fired are the with-guard run.
+
+### Position sensitivity: same payload at long_horizon posNN, guard on
+
+| system | pos01 | pos05 | pos10 |
+| --- | --- | --- | --- |
+| regex-floor | 0.000 | 0.000 | 0.000 |
+| unplug-model | 0.000 | 0.000 | 0.000 |
+| unplug-pipeline | 0.000 | 0.000 | 0.000 |
+| protectai | 1.000 | 1.000 | 0.000 |
+
 ---
 
-Generated 2026-09-09T12:04:22+00:00 from harness 3840be657be6, seed 20260912.
+Generated 2026-09-09T12:19:58+00:00 from harness a4b29667eec7, seed 20260912.
