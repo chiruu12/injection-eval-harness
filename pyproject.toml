@@ -24,3 +24,7 @@ packages = ["src/injection_eval"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+# Tests needing the pinned model weights. `make test` stays offline; the
+# reproduce workflow runs everything.
+markers = ["slow: needs pinned model weights and a download"]
+addopts = "-m 'not slow'"

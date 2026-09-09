@@ -33,7 +33,13 @@ class Guard:
 
     def inspect_many(self, texts: list[str]) -> list[Verdict]:
         """The boundary decision for each untrusted string, in input order."""
-        # Score the whole batch at once: padded batches of 1 change ProtectAI logits.
+        # Score the whole batch at once. An earlier version of this comment
+        # claimed batches of 1 change ProtectAI's logits; measured, the effect is
+        # 2.0e-08 on 8 of 40 primary rows, which is float32 accumulation noise.
+        # The closest ProtectAI score to its 0.5 threshold in the committed table
+        # is 5.2e-02, so no verdict can turn on it. Batching stays for speed, and
+        # tests/test_batch_invariance.py pins the measurement rather than the
+        # assertion.
         scores = self.detector.score(texts)
         detector = self.detector
         take_spans = isinstance(detector, SpanDetector)

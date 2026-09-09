@@ -28,6 +28,11 @@ jobs:
       - name: Fetch every pinned artifact
         run: .venv/bin/python -m injection_eval.fetch
 
+      - name: Tests that need the pinned weights
+        # Deselected from `make test`, which stays offline. This is the only
+        # place the batch-invariance measurement actually runs.
+        run: .venv/bin/python -m pytest -q tests -m slow
+
       - name: Regenerate the table and compare it to the committed one
         run: .venv/bin/python scripts/check_determinism.py --regenerate --twice
 
