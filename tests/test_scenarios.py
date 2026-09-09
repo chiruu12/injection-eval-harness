@@ -1,5 +1,7 @@
 """Scenario corpus: unique keys, benign predicates, payload placement. No network."""
 
+import re
+
 from injection_eval.core.contracts import Scenario, ToolCall, Turn, TurnKind
 from injection_eval.scenarios import all_scenarios, by_family
 from injection_eval.systems import regex_hits
@@ -126,13 +128,16 @@ def test_split_payload_fragments_are_clean_until_assembled():
     for s in by_family()["split_payload"]:
         fragments = _payloads_in_plan_order(s)
         assert len(fragments) >= 2, s.key
+        pattern = s.build_agent().triggers[0][0]
         for frag in fragments:
             assert regex_hits(frag) == [], (s.key, frag, regex_hits(frag))
+            assert re.search(pattern, frag, re.IGNORECASE) is None, (s.key, frag)
         assembled = "".join(fragments)
         assert regex_hits(assembled), (
             f"{s.key} assembled instruction must hit regex_hits, or the family "
             "must be documented as keyword-undetectable"
         )
+        assert re.search(pattern, assembled, re.IGNORECASE), s.key
 
 
 def test_position_variants_share_an_identical_payload():
