@@ -1,0 +1,62 @@
+name: ci
+
+# Offline only. Everything here runs with no network reachable from the test
+# process and no model download, so a red CI means the code broke and never that
+# a hub was slow. The heavy reproduction lives in reproduce.yml.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up the environment
+        run: python3 scripts/setup_worktree.py
+
+      - name: Unit tests
+        run: .venv/bin/python -m pytest -q tests
+
+      - name: Pins are commit shas, not branches
+        # Cheap and load bearing: a pin bumped to a branch name would unfreeze
+        # the whole eval silently, and the contamination claim rests on the
+        # primary dataset postdating every model.
+        run: .venv/bin/python -m pytest -q tests/test_pins.py
+
+  style:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Lint
+        run: uvx ruff@0.9.4 check src tests scripts
+
+      # No format --check yet. Four fleet workers hold branches off this commit,
+      # and reformatting the tree now would conflict with every one of them. The
+      # gate goes in once those branches are integrated; `make format` applies it.
+
+      - name: No em dashes in source or docs
+        # House style, enforced rather than remembered.
+        run: |
+          if grep -rn $'—' --include='*.py' --include='*.md' src tests docs scripts README.md; then
+            echo "em dash found; use a comma, a hyphen, or a full stop"
+            exit 1
+          fi

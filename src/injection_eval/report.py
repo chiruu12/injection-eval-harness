@@ -56,7 +56,7 @@ def fpr_table(block: dict) -> str:
 
 def shift_table(shift: dict) -> str:
     names = list(next(iter(shift.values()))["transforms"])
-    head = ["system", "baseline R"] + names
+    head = ["system", "baseline R", *names]
     lines = [_row(head), _row(["---"] * len(head))]
     for key in ORDER:
         if key not in shift:

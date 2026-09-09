@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+title: injection-eval-harness
+message: >-
+  An independent, contamination-controlled evaluation harness for
+  prompt-injection detectors.
+type: software
+authors:
+  - given-names: Chirag
+    family-names: Gupta
+repository-code: https://github.com/chiruu12/injection-eval-harness
+license: Apache-2.0

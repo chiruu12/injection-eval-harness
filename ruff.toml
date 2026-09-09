@@ -1,0 +1,33 @@
+# Kept out of pyproject.toml so that lint settings and package metadata can be
+# edited independently, and so a worker touching dependencies never collides with
+# a change to style rules.
+target-version = "py312"
+line-length = 100
+src = ["src"]
+
+[lint]
+select = [
+  "E", "F", "W",   # pycodestyle, pyflakes
+  "I",             # import sorting
+  "UP",            # pyupgrade: this is a 3.12 codebase, keep it written like one
+  "B",             # bugbear
+  "SIM",           # simplify
+  "RUF",
+]
+ignore = [
+  "E501",   # line length is handled by the formatter
+  "B008",   # dataclass field defaults read fine here
+]
+
+[lint.per-file-ignores]
+# The homoglyph table is a mapping from Latin characters to their Cyrillic and
+# Greek lookalikes. Ruff flagging them as "ambiguous" is the rule working; the
+# ambiguity is the transform under test, so it is suppressed here and nowhere
+# else in the tree.
+"src/injection_eval/transforms.py" = ["RUF001", "RUF002", "RUF003"]
+# Tests assert on hand-computed constants and re-import protocols for isinstance
+# checks; neither is a smell worth a suppression comment on every line.
+"tests/*" = ["B011", "RUF012"]
+
+[format]
+quote-style = "double"

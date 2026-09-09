@@ -1,0 +1,43 @@
+name: reproduce
+
+# The expensive one: downloads the pinned checkpoints and datasets, regenerates
+# every reported number, and fails if any of them moved. Manual and weekly rather
+# than per-push, because it pulls a few hundred megabytes of model weights.
+on:
+  workflow_dispatch:
+  schedule:
+    # Mondays, 06:00 UTC. A pin that has been yanked upstream shows up here
+    # rather than the next time someone tries to reproduce a claim.
+    - cron: "0 6 * * 1"
+
+jobs:
+  table:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up the environment
+        run: python3 scripts/setup_worktree.py
+
+      - name: Fetch every pinned artifact
+        run: .venv/bin/python -m injection_eval.fetch
+
+      - name: Regenerate the table and compare it to the committed one
+        run: .venv/bin/python scripts/check_determinism.py --regenerate --twice
+
+      - name: Render the tables
+        run: .venv/bin/python -m injection_eval.report
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-${{ github.sha }}
+          path: results/
+          retention-days: 90
