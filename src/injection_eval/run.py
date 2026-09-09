@@ -17,8 +17,15 @@ from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
 
+from sklearn.metrics import average_precision_score, roc_auc_score
+
 from . import metrics
-from .bars import fails_contamination, fails_fpr_shift, fails_robustness
+from .bars import (
+    classify_shift_failure,
+    fails_contamination,
+    fails_fpr_shift,
+    fails_robustness,
+)
 from .core.contracts import SpanDetector
 from .data import Split, load_split
 from .detectors.regex_floor import regex_hits
@@ -116,6 +123,52 @@ def _fire(scores: list[float], threshold: float) -> tuple[float, int, int]:
     return (hits / n if n else 0.0), hits, n
 
 
+def _average_precision(y_true: list[int], y_score: list[float]) -> float:
+    """Average precision for one bootstrap draw, NaN when the draw holds a single class.
+
+    bootstrap_ci drops NaN draws, so a resample that happened to miss one arm
+    is excluded from the interval rather than counted as a result of zero.
+    """
+    if len(set(y_true)) < 2:
+        return float("nan")
+    return float(average_precision_score(y_true, y_score))
+
+
+def _ranking(
+    pos_scores: list[float] | None, ben_scores: list[float] | None
+) -> tuple[dict | None, str | None]:
+    """Threshold-free ranking of one arm pair, or why no AUC can exist for them.
+
+    PR-AUC and ROC-AUC rank the transformed positives against the transformed
+    benign rows, which is what a recall figure at a fixed threshold cannot see:
+    a distribution that slid below the threshold without changing the order.
+    Both are undefined unless both classes are present, and the reason is
+    returned rather than a zero or a NaN that would later read as a result.
+    The interval uses the same seeded bootstrap and the same seed as the
+    static table, so resampling noise is shared and a delta against another
+    seeded number is not inflated by two independent draws.
+    """
+    if pos_scores is None or ben_scores is None:
+        arm = "positives" if pos_scores is None else "benign"
+        return None, (
+            f"PR-AUC and ROC-AUC are undefined: the {arm} arm of this transform "
+            f"was not scored"
+        )
+    if not pos_scores or not ben_scores:
+        return None, (
+            f"PR-AUC and ROC-AUC are undefined: the ranked rows hold one class "
+            f"({len(pos_scores)} positives, {len(ben_scores)} benign)"
+        )
+    y = [1] * len(pos_scores) + [0] * len(ben_scores)
+    s = [*pos_scores, *ben_scores]
+    lo, hi = metrics.bootstrap_ci(y, s, _average_precision, seed=SEED)
+    return {
+        "pr_auc": float(average_precision_score(y, s)),
+        "pr_auc_ci95": [lo, hi],
+        "roc_auc": float(roc_auc_score(y, s)),
+    }, None
+
+
 def evaluate_shift(
     split: Split,
     guards: list[Guard],
@@ -124,7 +177,10 @@ def evaluate_shift(
     """Robustness of each detector to seeded, label-preserving surface changes.
 
     Both arms of the split are transformed, because a recall figure without
-    its false-positive rate is not a result.
+    its false-positive rate is not a result. Each arm pair is also ranked
+    threshold-free, because a table read at one fixed threshold cannot tell a
+    ranking that survived the shift from one that did not, and the two
+    failures have different fixes (docs/FINDINGS.md finding 2).
     """
     table = TRANSFORMS if transforms is None else transforms
     positives = [e for e in split.examples if e.label == 1]
@@ -138,17 +194,25 @@ def evaluate_shift(
         base_ben = guard.detector.score([e.text for e in benign]) if benign else []
         base_recall, _, _ = _fire(base_pos, thr)
         base_fpr, _, _ = _fire(base_ben, thr)
+        base_rank, base_auc_note = _ranking(base_pos, base_ben)
         row: dict = {
             "baseline_recall": round(base_recall, 4),
             "n_positives": len(positives),
             "baseline_fpr": round(base_fpr, 4),
             "n_benign": len(benign),
+            "baseline_pr_auc": None if base_rank is None else round(base_rank["pr_auc"], 4),
+            "baseline_roc_auc": None if base_rank is None else round(base_rank["roc_auc"], 4),
             "transforms": {},
         }
+        if base_auc_note is not None:
+            row["baseline_auc_undefined"] = base_auc_note
         for name, fn in table.items():
             entry: dict = {}
+            rec: float | None = None
+            pos_scores: list[float] | None
             pos_texts, pos_note = _transformed(fn, positives)
             if pos_note is not None:
+                pos_scores = None
                 entry.update(
                     {
                         "recall": None,
@@ -171,8 +235,10 @@ def evaluate_shift(
                         "fails_robustness_bar": fails_robustness(base_recall, rec),
                     }
                 )
+            ben_scores: list[float] | None
             ben_texts, ben_note = _transformed(fn, benign)
             if ben_note is not None:
+                ben_scores = None
                 entry.update(
                     {
                         "fpr": None,
@@ -193,6 +259,33 @@ def evaluate_shift(
                         "false_positives": fps,
                         "n_benign": fpr_n,
                         "fails_fpr_bar": fails_fpr_shift(base_fpr, fpr),
+                    }
+                )
+            rank, auc_note = _ranking(pos_scores, ben_scores)
+            if rank is None or base_rank is None:
+                entry.update(
+                    {
+                        "pr_auc": None,
+                        "pr_auc_ci95": None,
+                        "pr_auc_delta": None,
+                        "roc_auc": None,
+                        "roc_auc_delta": None,
+                        "classification": None,
+                        "auc_undefined": auc_note if auc_note is not None else base_auc_note,
+                    }
+                )
+            else:
+                lo, hi = rank["pr_auc_ci95"]
+                entry.update(
+                    {
+                        "pr_auc": round(rank["pr_auc"], 4),
+                        "pr_auc_ci95": [round(lo, 4), round(hi, 4)],
+                        "pr_auc_delta": round(rank["pr_auc"] - base_rank["pr_auc"], 4),
+                        "roc_auc": round(rank["roc_auc"], 4),
+                        "roc_auc_delta": round(rank["roc_auc"] - base_rank["roc_auc"], 4),
+                        "classification": classify_shift_failure(
+                            base_recall, rec, base_rank["pr_auc"], rank["pr_auc"]
+                        ),
                     }
                 )
             row["transforms"][name] = entry
