@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Provision a marshal worktree.
+"""Provision the virtualenv and locked dependencies for a checkout.
 
-Exists because `worktree_setup` is exec'd directly rather than through a shell,
-so `a && b` reaches uv as a literal argument and fails with a usage error. One
-entry point, several steps.
+One entry point so CI and a fresh local clone provision identically, and so the
+steps stay in a file that can be read rather than spread across workflow yaml.
 """
 
 from __future__ import annotations

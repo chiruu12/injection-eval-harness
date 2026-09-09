@@ -49,9 +49,9 @@ jobs:
       - name: Lint
         run: uvx ruff@0.9.4 check src tests scripts
 
-      # No format --check yet. Four fleet workers hold branches off this commit,
-      # and reformatting the tree now would conflict with every one of them. The
-      # gate goes in once those branches are integrated; `make format` applies it.
+      # No format --check yet. Several branches are open off this commit and
+      # reformatting the tree now would conflict with all of them. The gate goes
+      # in once they are merged; `make format` applies it.
 
       - name: No em dashes in source or docs
         # House style, enforced rather than remembered.
