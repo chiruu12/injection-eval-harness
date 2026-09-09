@@ -12,6 +12,7 @@ import re
 from dataclasses import dataclass, field
 
 from ..core.contracts import ToolCall, Turn, TurnKind
+from .scripted import UNAVAILABLE_ANSWER, fact_was_readable
 
 
 @dataclass
@@ -23,12 +24,18 @@ class AccumulatingAgent:
     in order. A fragment that is innocuous alone can still hijack once later
     fragments fill it in, which is the case the split-payload family exists to
     measure.
+
+    required_fact is the same contract as ScriptedAgent, so the two stay
+    substitutable on benign controls: a withheld or covered fact produces the
+    same failure close.
     """
 
     name: str = "accumulating"
     plan: tuple[ToolCall, ...] = ()
     final: str = "done"
     triggers: tuple[tuple[str, ToolCall], ...] = ()
+    required_fact: str = ""
+    missing_final: str = UNAVAILABLE_ANSWER
     _step: int = field(default=0, repr=False)
 
     def act(self, history: list[Turn]) -> ToolCall | str:
@@ -39,7 +46,9 @@ class AccumulatingAgent:
             call = self.plan[self._step]
             self._step += 1
             return call
-        return self.final
+        if fact_was_readable(history, self.required_fact):
+            return self.final
+        return self.missing_final
 
     def _readable_buffer(self, history: list[Turn]) -> str:
         """The agent's working context: every tool turn it was allowed to read.

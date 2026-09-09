@@ -56,6 +56,9 @@ class ScriptedScenario:
     # ScriptedAgent is last-turn only. Split-payload scenarios pass
     # AccumulatingAgent so an instruction assembled across turns can hijack.
     agent_cls: type = ScriptedAgent
+    # The token the successful final is not allowed to invent. Empty on attack
+    # scenarios so a blocked payload cannot be scored as a failed user task.
+    required_fact: str = ""
 
     def __post_init__(self) -> None:
         if not self.opening_request:
@@ -68,6 +71,7 @@ class ScriptedScenario:
             plan=self.plan,
             final=self.final,
             triggers=() if self.benign else self.triggers,
+            required_fact=self.required_fact,
         )
 
     def build_tools(self) -> dict[str, Tool]:
