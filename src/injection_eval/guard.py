@@ -20,6 +20,13 @@ class Guard:
     detector: Detector
     policy: Policy
 
+    @property
+    def name(self) -> str:
+        """Identifies this guard in an Episode. Detector and threshold together,
+        because the same detector under two thresholds is two guards as far as
+        any result table is concerned."""
+        return f"{self.detector.key}@{self.policy.threshold:g}"
+
     def inspect(self, text: str) -> Verdict:
         """The boundary decision for one untrusted string."""
         return self.inspect_many([text])[0]

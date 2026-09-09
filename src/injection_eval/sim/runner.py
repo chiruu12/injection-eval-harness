@@ -8,11 +8,11 @@ this loop rather than forking it.
 from __future__ import annotations
 
 from enum import Enum
-from typing import Protocol, runtime_checkable
 
 from ..core.contracts import (
     Action,
     Episode,
+    Guard,
     Scenario,
     Tool,
     ToolCall,
@@ -32,17 +32,6 @@ class GuardPlacement(str, Enum):
     NONE = "none"
     TOOL_OUTPUT = "tool_output"
     USER_INPUT = "user_input"
-
-
-@runtime_checkable
-class Guard(Protocol):
-    """A detector and a policy, consulted at whatever boundary the run chose."""
-
-    name: str
-
-    def inspect(self, text: str) -> Verdict:
-        """The seam the runner consults at the configured boundary."""
-        ...
 
 
 class Runner:

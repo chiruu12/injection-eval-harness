@@ -117,6 +117,23 @@ class Policy(Protocol):
         ...
 
 
+@runtime_checkable
+class Guard(Protocol):
+    """A detector read through a policy, consulted at one untrusted boundary.
+
+    Lives here rather than in sim/ because the runner and the concrete guard must
+    agree on it, and a protocol declared inside the consumer is a protocol only
+    the consumer can satisfy. `name` is part of the contract because an Episode
+    records which guard produced it, and an unnamed guard makes a results table
+    that cannot be read back.
+    """
+
+    name: str
+
+    def inspect(self, text: str) -> Verdict:
+        ...
+
+
 # --------------------------------------------------------------------------- #
 # Tools: where untrusted content enters an agent
 # --------------------------------------------------------------------------- #
