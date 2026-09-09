@@ -69,9 +69,10 @@ def test_index_and_manifest_and_tables_are_reachable():
         assert body, path
 
 
-def test_unknown_path_is_404_and_lists_what_exists():
+def test_unknown_path_is_404_and_says_what_it_received():
     status, _, body = _call("/secrets")
     assert status.startswith("404")
+    assert b"/secrets" in body, "a 404 that does not echo the path it got is unfixable remotely"
     assert b"/results.json" in body
 
 
@@ -147,3 +148,43 @@ def test_a_path_without_a_leading_slash_is_still_matched():
     status, body = _raw("/api/index", "path=results.json")
     assert status.startswith("200")
     assert body == (ROOT / "results" / "results.json").read_bytes()
+
+
+@pytest.mark.parametrize(
+    "forwarded",
+    ["/api/index", "/api/index.py", "/api", "", "/"],
+)
+def test_the_function_address_forwarded_as_the_path_is_the_index(forwarded: str):
+    """`/` and `/api/index` are the one case where caller path and rewrite target
+    are the same string, so normalising only the PATH_INFO branch missed both."""
+    status, body = _raw("/api/index", f"path={forwarded}")
+    assert status.startswith("200"), forwarded
+    assert b"injection-eval-harness" in body
+
+
+def test_a_trailing_slash_does_not_404():
+    status, body = _raw("/api/index", "path=/tables.md/")
+    assert status.startswith("200")
+    assert body == (ROOT / "results" / "TABLES.md").read_bytes()
+
+
+def test_errors_are_never_cached():
+    """A 404 pinned at the edge outlives the deploy that fixes it."""
+    environ: dict = {"PATH_INFO": "/api/index", "QUERY_STRING": "path=/nope"}
+    setup_testing_defaults(environ)
+    environ["PATH_INFO"] = "/api/index"
+    environ["QUERY_STRING"] = "path=/nope"
+    captured: dict = {}
+
+    def start_response(status: str, headers: list[tuple[str, str]]) -> None:
+        captured["status"] = status
+        captured["headers"] = dict(headers)
+
+    b"".join(api.app(environ, start_response))
+    assert captured["status"].startswith("404")
+    assert captured["headers"]["Cache-Control"] == "no-store"
+
+
+def test_success_is_cached():
+    _, headers, _ = _call("/results.json")
+    assert "s-maxage" in headers["Cache-Control"]

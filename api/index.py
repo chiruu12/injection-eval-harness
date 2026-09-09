@@ -47,14 +47,28 @@ _ROUTES: dict[str, tuple[Path, str]] = {
 _FUNCTION_PATHS = ("/api/index", "/api/index.py", "/api")
 
 
+def _normalise(path: str) -> str:
+    """One path, whatever route it came in by.
+
+    The function's own address is the index, from either source. Reading it out
+    of the query parameter and not out of PATH_INFO is what left `/` and
+    `/api/index` returning 404 while the three file routes worked: the caller's
+    path and the rewrite destination are the same string there.
+    """
+    if not path:
+        return "/"
+    if not path.startswith("/"):
+        path = "/" + path
+    if len(path) > 1:
+        path = path.rstrip("/") or "/"
+    return "/" if path in _FUNCTION_PATHS else path
+
+
 def _requested_path(environ: dict[str, Any]) -> str:
     """What the caller actually asked for, after the rewrite has rewritten it."""
     query = parse_qs(environ.get("QUERY_STRING", ""))
     forwarded = query.get("path", [""])[0]
-    if forwarded:
-        return forwarded if forwarded.startswith("/") else "/" + forwarded
-    path = environ.get("PATH_INFO", "/")
-    return "/" if path in _FUNCTION_PATHS else path
+    return _normalise(forwarded or environ.get("PATH_INFO", "/"))
 
 
 _INDEX = """injection-eval-harness
@@ -78,7 +92,8 @@ def _body(path: str) -> tuple[int, str, bytes]:
     route = _ROUTES.get(path)
     if route is None:
         known = " ".join(sorted(_ROUTES))
-        return HTTPStatus.NOT_FOUND, _TEXT, f"not found. try: / {known}\n".encode()
+        message = f"not found: {path}\ntry: / {known}\n"
+        return HTTPStatus.NOT_FOUND, _TEXT, message.encode("utf-8")
     target, content_type = route
     if not target.is_file():
         # The deployment was built without results/, which is a packaging fault
@@ -96,10 +111,14 @@ def app(environ: dict[str, Any], start_response: Callable[..., Any]) -> Iterable
         start_response("405 Method Not Allowed", [("Allow", "GET, HEAD")])
         return [b""]
     status, content_type, payload = _body(path)
+    # An error cached at the edge for an hour outlives the deploy that fixes it,
+    # which is how a stale 404 kept being served after the code stopped producing
+    # one. Only success is cacheable.
+    cache = _CACHE if status == HTTPStatus.OK else "no-store"
     headers = [
         ("Content-Type", content_type),
         ("Content-Length", str(len(payload))),
-        ("Cache-Control", _CACHE),
+        ("Cache-Control", cache),
     ]
     start_response(f"{status.value} {status.phrase}", headers)
     return [b""] if method == "HEAD" else [payload]
