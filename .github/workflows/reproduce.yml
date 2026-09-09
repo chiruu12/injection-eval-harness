@@ -42,7 +42,18 @@ jobs:
         run: .venv/bin/python -m pytest -q tests -m slow
 
       - name: Regenerate the table and compare it to the committed one
-        run: .venv/bin/python scripts/check_determinism.py --regenerate --twice
+        # --twice is exact: two runs on this runner must agree bit for bit, and
+        # no tolerance applies to it. The tolerance covers only the comparison
+        # against the committed baseline, which was generated on a different CPU.
+        # 0.005 is the measured cross-platform envelope, not a guess: the first
+        # Linux run moved raw scores by at most 2.1e-05 and every reported recall,
+        # FPR, F1, ECE and bar verdict by nothing at all. One cell moved further,
+        # unplug-pipeline PR-AUC under carrier at 0.0026, because average
+        # precision ranks rows and float noise reorders adjacent ones. Regenerate
+        # on the machine that owns the baseline and this stays at 0.
+        run: >-
+          .venv/bin/python scripts/check_determinism.py
+          --regenerate --twice --tolerance 0.005
 
       - name: Render the tables
         run: .venv/bin/python -m injection_eval.report

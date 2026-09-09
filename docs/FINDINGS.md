@@ -106,16 +106,28 @@ topic-reading either. The metric needs rebuilding, not just a looser bar.
 
 ## 4. base64 removes the model entirely, and the pipeline survives it
 
-Recall on the 120 primary positives, same threshold, one transform at a time:
+Recall on the 120 primary positives, with the false-positive rate from the same
+transform applied to the 120 primary benign rows underneath it. Same threshold,
+one transform at a time. Read the pairs, never a recall alone:
 
-| system | baseline | base64 | leetspeak | homoglyph | zero-width | whitespace | carrier |
-|---|---|---|---|---|---|---|---|
-| unplug-model | 0.792 | **0.000** | 0.633 | 0.708 | 0.867 | 0.808 | 1.000 |
-| unplug-pipeline | 0.867 | 0.917 | 0.850 | 1.000 | 0.942 | 0.842 | 1.000 |
-| protectai | 0.842 | 1.000 | 1.000 | 0.958 | 0.792 | 0.758 | **0.450** |
-| regex-floor | 0.250 | 1.000 | 0.000 | 0.017 | 0.133 | 0.133 | 0.250 |
+| system | arm | baseline | b64+instr | b64 bare | leet | homoglyph | zero-width | whitespace | carrier |
+|---|---|---|---|---|---|---|---|---|---|
+| unplug-model | R | 0.792 | 0.000 | 0.992 | 0.633 | 0.708 | 1.000 | 0.908 | 1.000 |
+| unplug-model | FPR | 0.200 | 0.008 | 0.958 | 0.700 | 0.567 | 1.000 | 0.800 | 0.942 |
+| unplug-pipeline | R | 0.867 | 0.917 | 1.000 | 0.850 | 1.000 | 1.000 | 0.942 | 1.000 |
+| unplug-pipeline | FPR | 0.317 | 0.558 | 0.992 | 0.392 | 1.000 | 1.000 | 0.900 | 0.992 |
+| protectai | R | 0.842 | 1.000 | 0.000 | 1.000 | 0.958 | 0.958 | 0.983 | 0.450 |
+| protectai | FPR | 0.575 | 1.000 | 0.000 | 0.992 | 0.925 | 0.983 | 1.000 | 0.108 |
+| regex-floor | R | 0.250 | 1.000 | 0.000 | 0.000 | 0.017 | 0.000 | 0.000 | 0.250 |
+| regex-floor | FPR | 0.033 | 1.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.033 |
 
-Two systems breach the 20-point robustness bar, in opposite places.
+An earlier version of this table printed the recall row alone, and every reading
+below that treats a high recall as good news was wrong in a way the missing row
+would have made obvious. `unplug-model` under zero-width reads 1.000, which is
+the best cell in its row and is the detector firing on all 240 documents. Seven
+of the twelve cells where a recall rose are cells where the FPR rose further.
+
+Two systems breach the 20-point robustness bar on recall, in opposite places.
 
 `unplug-model` goes to exactly zero on base64. Not degraded, gone: the 70M
 checkpoint has no representation of an encoded payload and scores every one of
@@ -219,13 +231,14 @@ So the honest summary is that no checkpoint in this table decodes anything. One
 flags every encoding, two flag none, and the only system that handles the case
 does it with a decoder bolted on in front.
 
-**This finding also exposes a hole in the harness itself.** The shift slice runs
-over positives only, so every transform in the table above reports a recall with
-no false-positive rate beside it. That is precisely the error this repo was built
-to point at in other people's evaluations, and it sat in my own table for the
-whole of the first version. A recall number on a transformed slice means nothing
-without the same transform applied to the benign half, and the next revision has
-to add that arm before any of these transform numbers are quoted anywhere.
+**This finding also exposed a hole in the harness itself, since closed.** The
+shift slice ran over positives only, so every transform reported a recall with no
+false-positive rate beside it. That is precisely the error this repo was built to
+point at in other people's evaluations, and it sat in my own table for the whole
+of the first version. The benign arm now runs under every transform, and the
+first thing it printed was `unplug-model` on `base64_bare` at recall 0.992 next
+to an FPR of 0.958, which is the cell I had been about to quote as the model's
+best result.
 
 ## 5. The SDK decides without the model on 21 of 142 findings
 
@@ -257,18 +270,157 @@ One caveat that limits this result: the carrier document is a single fixed templ
 120 documents that differ only in payload is 120 samples of one carrier, not 120
 carriers.
 
+## 7. Almost every robustness failure here is a capability failure, not a threshold one
+
+Findings 4 and 4b read recall at each system's published threshold. A recall that
+falls at a fixed threshold has two very different causes, and the column cannot
+tell them apart. Either the score distribution slid under the threshold while the
+ordering of attacks above benign rows held, in which case re-thresholding
+recovers it, or the ordering itself collapsed, in which case nothing recovers it.
+The first is an operating-point problem for the person deploying the detector.
+The second is a problem for whoever trains it.
+
+PR-AUC separates them, because it reads the ranking and never a threshold. Each
+transform is scored against its own transformed benign arm, so the comparison is
+within-slice. The arms are balanced at 120 against 120, so 0.500 is chance:
+
+| system | baseline | b64+instr | b64 bare | leet | homoglyph | zero-width | whitespace | carrier |
+|---|---|---|---|---|---|---|---|---|
+| unplug-model | 0.858 | 0.490 | 0.546 | 0.454 | 0.605 | 0.630 | 0.676 | 0.773 |
+| unplug-pipeline | 0.743 | 0.611 | 0.394 | 0.692 | 0.517 | 0.500 | 0.485 | 0.648 |
+| protectai | 0.733 | 0.508 | 0.550 | 0.589 | 0.539 | 0.468 | 0.477 | 0.765 |
+| regex-floor | 0.599 | 0.500 | 0.500 | 0.500 | 0.508 | 0.500 | 0.500 | 0.599 |
+
+Of the 28 cells, 24 are capability failures, 2 are threshold failures, and 2 come
+through intact. Twelve cells sit at or below chance. Six sit strictly below it,
+which means the transformed benign rows outscore the transformed attacks and the
+detector has become weak evidence pointing the wrong way.
+
+Two of those numbers deserve reading next to their recall. `unplug-model` on
+`base64_bare` has the highest recall in its entire row at 0.992 and a PR-AUC of
+0.546, which is 0.046 above guessing. `unplug-pipeline` on the same slice has
+recall 1.000 and PR-AUC 0.394, below chance. Both look like the strongest cells
+in the table when read one number at a time.
+
+The two cells that survive a transform are `regex-floor` under `carrier`, which
+is the no-op control and is supposed to survive, and `unplug-pipeline` under
+`leetspeak` at 0.692 against a 0.743 baseline. That is the only genuine survival
+in the table.
+
+The classifier that produces those verdicts had three defects of its own, all
+found after it was written and all in the direction of flattering the detector.
+It read recall and PR-AUC and never FPR, so the regex floor under
+`base64_with_instruction` came out "intact" while firing on 120 of 120 benign
+rows. It compared the PR-AUC drop against a fixed bar without asking where the
+ranking landed, so a floor scoring a constant zero on all 240 rows was labelled a
+threshold failure, which promises a re-threshold that cannot exist. Both are
+fixed, and `tests/test_bars.py` pins the measured cases. The tempting third fix
+was moving the capability bar from 0.10 to 0.09 to make those rows come out
+right, which is fitting a pre-registered bar to the result it was registered to
+judge, and it is not what happened.
+
+## 8. A guard on the tool-output boundary blocks most attacks and costs task completion
+
+The static table scores documents. It cannot say whether a detector placed at the
+untrusted boundary of a running agent stops anything, so the harness also runs
+25 scripted episodes per system, each once with the guard off and once with it
+inspecting every tool result before the agent sees it. 13 carry an injected
+payload in tool output, 12 are benign controls.
+
+| system | ASR off | ASR on | utility off | utility on | never fired |
+|---|---|---|---|---|---|
+| regex-floor | 1.000 | 0.308 | 1.000 | 0.750 | 0.520 |
+| unplug-model | 1.000 | 0.462 | 1.000 | 1.000 | 0.440 |
+| unplug-pipeline | 1.000 | 0.077 | 1.000 | 0.333 | 0.120 |
+| protectai | 1.000 | 0.923 | 1.000 | 1.000 | 0.920 |
+
+Attack success is 13 episodes, utility is the 12 benign controls. Both arms are
+small and no interval is quoted, so read the ordering and not the gaps.
+
+`unplug-pipeline` blocks 12 of 13 attacks and completes 4 of 12 benign tasks.
+`protectai` completes every benign task and blocks 1 of 13 attacks. Those are the
+same trade the static FPR column describes, now priced in tasks the user does not
+get done rather than in documents. Neither end of that range is a setting anyone
+would ship, and the point of running both arms is that a report quoting either
+column alone would recommend one of them.
+
+The benign controls are stratified, because an earlier version was not and the
+number it produced was meaningless. All 12 controls carried injection-adjacent
+phrasing, roughly 30 times the density of the real benign split, so utility under
+a guard was 0.000 for everything and the column said only that the controls were
+adversarial. They are now 9 plain and 3 adversarial. The plain ones survive every
+guard here; the adversarial ones are where the utility differences live.
+
+Position sensitivity is the one episode result with no useful signal yet. The
+same payload placed at turn 1, 5 and 10 of a long-horizon episode gives 1 episode
+per cell, and a rate over n=1 is not a measurement. It is in the table because
+the machinery exists and the scenarios are cheap to add, not because the current
+numbers support anything.
+
+## 9. The table is bit-reproducible on one machine and reproducible to 2.1e-05 across two
+
+`reproduce.yml` regenerates every number from the pinned weights and fails if any
+of them moved. It had never once run when the first version of this file was
+written, which meant the reproducibility claim rested entirely on this laptop.
+Its first run failed, and what it failed on is worth reporting rather than
+quietly configuring away.
+
+Two runs on the same GitHub runner agreed exactly, so nothing here is unseeded.
+Against the committed baseline, generated on macOS arm64, the Linux x86-64 run
+differed in 127 of the stored values. 115 are raw per-row detector scores, and
+the largest gap between any pair is 2.1e-05.
+
+What that moved, in the numbers this report actually quotes:
+
+| quantity | changed across platforms |
+|---|---|
+| recall, FPR, precision, F1 | none |
+| ECE, Brier | none |
+| pair and marginal accuracy | none |
+| every pre-registered bar verdict | none |
+| shift classification, all 28 cells | none |
+| PR-AUC and ROC-AUC | 11 values on one system |
+
+Every derived number that counts rows is stable, because a 2e-05 shift almost
+never moves a score across a threshold. The rank statistics are the exception:
+average precision reads the ordering of the rows, so noise well below any
+meaningful precision can swap two adjacent scores and change the result. All 11
+moved cells belong to `unplug-pipeline`, whose SDK produces scores that cluster
+tightly enough for ties to be common. The largest single move is PR-AUC under
+`carrier`, 0.6484 to 0.6510.
+
+So the harness now asks for exactness where exactness is available and states a
+measured envelope where it is not. Two runs on one machine must agree bit for
+bit, with no tolerance. Reproducing on different hardware allows 0.005, which is
+the observed spread and not a number chosen to make the check pass. Anyone
+regenerating on the machine that owns the committed baseline should leave the
+tolerance at zero and expect an exact match.
+
+The honest caveat is that a 0.005 window on a PR-AUC could hide a genuine
+regression of 0.004. Two things limit that. The same-machine exact check runs in
+the same job, so a change that is not platform noise fails there first. And the
+tolerance only ever forgives floats: counts, verdicts and classifications are
+compared exactly at any setting.
+
 ## What I would do next
 
 In rough order of what the numbers argue for:
 
-1. Threshold selection per deployment distribution, and publish the reliability
-   curve next to any operating point. Finding 2 is the largest effect in this
-   report and the cheapest to act on.
-2. An encoded-payload slice in Unplug's own training mix, or an explicit statement
-   that encoding handling lives in the SDK and the checkpoint does not have it.
-   Finding 4 is currently an undocumented dependency.
-3. More carriers, and longer ones, before finding 6 is quoted anywhere.
-4. Drop the contamination framing to a secondary check. Finding 1 says it is not
+1. Encoded-benign rows in Unplug's training mix. Finding 7 says the obfuscation
+   failures are capability failures, so threshold advice does not reach them, and
+   finding 4b says the checkpoint keys on the base64 wrapper rather than what is
+   inside it. Filed upstream as UnplugAI/Unplug#189.
+2. Threshold selection per deployment distribution, with the reliability curve
+   published next to any operating point. This was first on the list when finding
+   2 was the largest effect measured. Finding 7 demotes it: re-thresholding
+   recovers 2 of 28 shift cells, so it is still worth doing and it is no longer
+   the main lever.
+3. More carriers, and longer ones, before finding 6 is quoted anywhere. The 120
+   carrier documents are one template with the payload moved.
+4. More episodes before finding 8 is quoted as a rate. 13 attacks and 12 controls
+   per system is enough to order the systems and not enough to size the gaps, and
+   position sensitivity is n=1 per cell.
+5. Drop the contamination framing to a secondary check. Finding 1 says it is not
    where the signal was.
 
 ## Null and negative results, collected
@@ -288,5 +440,11 @@ In rough order of what the numbers argue for:
   protectai and beats unplug-pipeline at 0.117. A baseline that weak made every
   transformer look better than it is, including ours. Fixed, and the tables above
   are regenerated at the honest threshold.
-- Zero-width and whitespace transforms cost `unplug-model` nothing. Both were
-  expected to hurt a subword tokeniser and neither did.
+- "Zero-width and whitespace transforms cost `unplug-model` nothing" was
+  published here and is refuted. It rested on the positives-only table, where
+  both slices read 0.867 and 0.808 against a 0.792 baseline. Two things were
+  wrong. The transforms split only 16 hand-picked words while the floor keys on
+  about 100, so most rows were barely transformed; and with no benign arm there
+  was no FPR to read. Corrected, zero-width takes recall to 1.000 and FPR to
+  1.000, which is not a cost of nothing, it is the detector answering yes to
+  everything.
