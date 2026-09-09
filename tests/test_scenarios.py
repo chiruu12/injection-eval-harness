@@ -4,6 +4,7 @@ import re
 
 from injection_eval.core.contracts import Scenario, ToolCall, Turn, TurnKind
 from injection_eval.scenarios import all_scenarios, by_family
+from injection_eval.sim.runner import BLOCKED_NOTICE
 from injection_eval.systems import regex_hits
 
 
@@ -167,3 +168,22 @@ def test_long_horizon_plans_are_eight_to_twelve_calls():
     for s in by_family()["long_horizon"]:
         n = len(s.build_agent().plan)
         assert 8 <= n <= 12, s.key
+
+
+def test_benign_required_facts_appear_in_some_tool_result():
+    """A benign control that cannot complete unguarded poisons the unguarded baseline."""
+    baited = 0
+    for s in all_scenarios():
+        fact = getattr(s, "required_fact", "")
+        if not s.benign:
+            assert fact == "", s.key
+            continue
+        assert fact, s.key
+        assert fact not in BLOCKED_NOTICE, s.key
+        tools = s.build_tools()
+        texts = [tools[call.tool].call(call).content for call in s.build_agent().plan]
+        carriers = [text for text in texts if fact in text]
+        assert carriers, s.key
+        if any(regex_hits(text) for text in carriers):
+            baited += 1
+    assert baited >= 3
