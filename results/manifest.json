@@ -1,0 +1,59 @@
+{
+  "generated_utc": "2026-09-09T10:35:58+00:00",
+  "harness_git_sha": "unknown",
+  "seed": 20260912,
+  "python": "3.12.11",
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "packages": {
+    "torch": "2.14.0",
+    "transformers": "5.16.1",
+    "datasets": "5.0.1",
+    "scikit-learn": "1.9.0",
+    "unplug-ai": "0.6.0"
+  },
+  "datasets": {
+    "boundary_pairs": {
+      "repo_id": "3nesdeniz/agentic-prompt-injection-boundary-pairs",
+      "sha": "a5682e7573e1c7bc4b12e64d49c0dcd90ca776cf",
+      "license": "cc-by-4.0",
+      "published": "2026-07-13",
+      "role": "primary"
+    },
+    "deepset": {
+      "repo_id": "deepset/prompt-injections",
+      "sha": "4f61ecb038e9c3fb77e21034b22511b523772cdd",
+      "license": "apache-2.0",
+      "published": "2023-05-17",
+      "role": "contamination-control"
+    }
+  },
+  "models": {
+    "unplug_tiny": {
+      "repo_id": "Unplug-AI/unplug-tiny-v1",
+      "sha": "19b7d6701bea1f6d9f03ec7bcaeeea390dff43be",
+      "params": "70.7M"
+    },
+    "protectai": {
+      "repo_id": "protectai/deberta-v3-base-prompt-injection-v2",
+      "sha": "90c9989b1a342275dd0d1a95aad283c04e075671",
+      "params": "184M"
+    }
+  },
+  "splits": {
+    "boundary_pairs/validation": {
+      "n": 120,
+      "positives": 60,
+      "checksum": "89eee6e300fdd61d"
+    },
+    "boundary_pairs/test": {
+      "n": 240,
+      "positives": 120,
+      "checksum": "67da66f8ccedbd45"
+    },
+    "deepset/test": {
+      "n": 116,
+      "positives": 60,
+      "checksum": "841ce78e49bb4ea2"
+    }
+  }
+}
