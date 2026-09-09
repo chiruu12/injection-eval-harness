@@ -7,6 +7,7 @@ this loop rather than forking it.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from enum import Enum
 
 from ..core.contracts import (
@@ -55,9 +56,7 @@ class Runner:
             _reset(tool)
 
         turns: list[Turn] = []
-        # contracts.Scenario is frozen without this field; every runnable
-        # scenario carries an opening request the loop can put on turn 0.
-        opening: str = scenario.opening_request  # type: ignore[attr-defined]
+        opening: str = scenario.opening_request
         user_text, user_verdict = self._filter(
             opening, at=GuardPlacement.USER_INPUT, guard=guard
         )
@@ -98,12 +97,16 @@ class Runner:
             visible, verdict = self._filter(
                 result.content, at=GuardPlacement.TOOL_OUTPUT, guard=guard
             )
+            # Same filtered string on the stored result as on the turn, so a
+            # BLOCK cannot leak the payload through tool_result. payload_span
+            # stays: it is harness ground truth, not agent-visible text, and
+            # carries_attack depends on it.
             turns.append(
                 Turn(
                     index=len(turns),
                     kind=TurnKind.TOOL,
                     content=visible,
-                    tool_result=result,
+                    tool_result=replace(result, content=visible),
                     verdict=verdict,
                 )
             )

@@ -152,8 +152,13 @@ class ToolResult:
     """What a tool returned, and whether the harness put an attack in it.
 
     `content` is untrusted by definition: it is the text a guard is placed to
-    inspect. `payload_span` is ground truth the harness knows because it did the
-    splicing, and is never visible to a detector or an agent.
+    inspect, and after the runner filters it, the text the agent actually saw.
+    `payload_span` is harness-only ground truth from splicing. It is never a
+    string the detector or agent can read: the span holds indices and a score,
+    not the payload, and it survives a BLOCK so `carries_attack` still marks
+    attack episodes after the payload has been stripped from `content`. The
+    span indexes the original spliced text, which the runner discards; it is
+    not a span into filtered `content`.
     """
 
     tool: str
@@ -189,7 +194,12 @@ class TurnKind(str, Enum):
 
 @dataclass(frozen=True)
 class Turn:
-    """One step of a trajectory, after any guard has already acted on it."""
+    """One step of a trajectory, after any guard has already acted on it.
+
+    `content` and `tool_result.content` (when present) are the post-guard text.
+    That a payload was spliced is recorded only on `tool_result.payload_span`,
+    never in an agent-visible string.
+    """
 
     index: int
     kind: TurnKind
@@ -201,6 +211,16 @@ class Turn:
     @property
     def guarded(self) -> bool:
         return self.verdict is not None and self.verdict.flagged
+
+    @property
+    def withheld(self) -> bool:
+        """The BLOCK-only signal the agent uses to skip a turn.
+
+        `guarded` is True for REDACT as well, and detection_turn needs that
+        broader meaning. Collapsing the two would score a missed redaction as
+        a successful block.
+        """
+        return self.verdict is not None and self.verdict.action is Action.BLOCK
 
 
 @dataclass(frozen=True)

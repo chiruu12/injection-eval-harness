@@ -43,16 +43,17 @@ class ScriptedAgent:
         return self.final
 
     def _hijack(self, history: list[Turn]) -> ToolCall | None:
-        """The most recent unguarded tool result wins, if it carries a trigger.
+        """The most recent tool result that reached the agent, if it carries a trigger.
 
-        Only the last tool turn is consulted. An agent that re-reads its whole
-        history and re-triggers on turn 9 for something it saw on turn 2 would
-        make detection-turn meaningless.
+        BLOCK withholds the text, so it cannot hijack. REDACT still reaches the
+        agent: a redaction that leaves the trigger in is an attack success, not
+        a block. Only the last tool turn is consulted so a re-read of turn 2
+        on turn 9 cannot make detection-turn meaningless.
         """
         last = next(
             (t for t in reversed(history) if t.kind is TurnKind.TOOL), None
         )
-        if last is None or last.guarded:
+        if last is None or last.withheld:
             return None
         for pattern, call in self.triggers:
             if re.search(pattern, last.content, re.IGNORECASE):

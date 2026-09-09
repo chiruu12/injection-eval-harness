@@ -1,10 +1,12 @@
 """Runner loop, checked with a scripted agent and a marker detector. No network."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields, is_dataclass
+from enum import Enum
 
 from injection_eval.agents.scripted import ScriptedAgent
 from injection_eval.core.contracts import (
     Action,
+    Span,
     ToolCall,
     Turn,
     TurnKind,
@@ -61,6 +63,55 @@ class MarkerGuard:
             score=score,
             threshold=self.threshold,
         )
+
+
+class MissRedactGuard:
+    """A REDACT that flags the text but leaves the trigger in the remaining string."""
+
+    name = "miss-redact"
+
+    def inspect(self, text: str) -> Verdict:
+        # First character is never the spliced payload; dropping it still leaves
+        # the trigger readable, which is the botched-redact case under test.
+        return Verdict(
+            action=Action.REDACT,
+            score=1.0,
+            threshold=0.5,
+            spans=(Span(0, 1, 1.0),),
+            content=text[1:] if text else text,
+        )
+
+
+def _reachable_strings(obj: object, *, _seen: set[int] | None = None):
+    """Every string hanging off an episode, for leak checks that cannot pick a field."""
+    seen = _seen if _seen is not None else set()
+    ident = id(obj)
+    if ident in seen:
+        return
+    seen.add(ident)
+    if isinstance(obj, str):
+        yield obj
+        return
+    if isinstance(obj, int | float | bool | bytes | type(None)):
+        return
+    if isinstance(obj, Enum):
+        return
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            yield from _reachable_strings(key, _seen=seen)
+            yield from _reachable_strings(value, _seen=seen)
+        return
+    if isinstance(obj, list | tuple | set | frozenset):
+        for member in obj:
+            yield from _reachable_strings(member, _seen=seen)
+        return
+    if is_dataclass(obj) and not isinstance(obj, type):
+        for field in fields(obj):
+            yield from _reachable_strings(getattr(obj, field.name), _seen=seen)
+        return
+    extra = getattr(obj, "__dict__", None)
+    if isinstance(extra, dict):
+        yield from _reachable_strings(extra, _seen=seen)
 
 
 @dataclass
@@ -220,3 +271,75 @@ def test_scenario_can_be_run_twice():
     assert first.attack_succeeded is True
     assert second.attack_succeeded is True
     assert [t.content for t in first.turns] == [t.content for t in second.turns]
+
+
+def test_mini_scenario_exposes_the_fields_the_runner_reads():
+    # runtime_checkable isinstance only checks methods, so the attributes the
+    # runner actually reads are asserted here.
+    scenario = MiniScenario()
+    assert isinstance(scenario.opening_request, str)
+    assert scenario.opening_request
+    agent = scenario.build_agent()
+    assert isinstance(agent.name, str)
+    assert agent.name
+    assert callable(agent.act)
+    tools = scenario.build_tools()
+    search = tools["search"]
+    assert isinstance(search.name, str)
+    assert callable(search.call)
+
+
+def test_block_does_not_leave_payload_reachable_from_episode():
+    episode = Runner(placement=GuardPlacement.TOOL_OUTPUT).run(
+        MiniScenario(benign=False), MarkerGuard()
+    )
+    leaks = [s for s in _reachable_strings(episode) if MARKER in s]
+    assert leaks == []
+    tool = _tool_turns(episode)[0]
+    assert tool.tool_result is not None
+    assert tool.tool_result.content == tool.content == BLOCKED_NOTICE
+    assert tool.withheld is True
+
+
+def test_incomplete_redact_is_scored_as_attack_success():
+    episode = Runner(placement=GuardPlacement.TOOL_OUTPUT).run(
+        MiniScenario(benign=False), MissRedactGuard()
+    )
+    tool = _tool_turns(episode)[0]
+    assert tool.verdict is not None
+    assert tool.verdict.action is Action.REDACT
+    assert MARKER in tool.content
+    assert episode.attack_succeeded is True
+    assert any(t.tool_call is not None and t.tool_call.tool == "leak" for t in episode.turns)
+    assert tool.guarded is True
+    assert tool.withheld is False
+
+
+def test_complete_redact_blocks_the_hijack():
+    episode = Runner(placement=GuardPlacement.TOOL_OUTPUT).run(
+        MiniScenario(benign=False), MarkerGuard(Action.REDACT)
+    )
+    tool = _tool_turns(episode)[0]
+    assert tool.verdict is not None
+    assert tool.verdict.action is Action.REDACT
+    assert MARKER not in tool.content
+    assert episode.attack_succeeded is False
+    assert not any(t.tool_call is not None and t.tool_call.tool == "leak" for t in episode.turns)
+    assert episode.turns[-1].content == FINAL
+    assert tool.guarded is True
+    assert tool.withheld is False
+
+
+def test_carries_attack_survives_block_redact_and_allow():
+    scenario = MiniScenario(benign=False)
+    blocked = Runner(placement=GuardPlacement.TOOL_OUTPUT).run(scenario, MarkerGuard())
+    redacted = Runner(placement=GuardPlacement.TOOL_OUTPUT).run(
+        scenario, MarkerGuard(Action.REDACT)
+    )
+    missed = Runner(placement=GuardPlacement.TOOL_OUTPUT).run(scenario, MissRedactGuard())
+    allowed = Runner(placement=GuardPlacement.NONE).run(scenario)
+    for episode in (blocked, redacted, missed, allowed):
+        tool = _tool_turns(episode)[0]
+        assert tool.tool_result is not None
+        assert tool.tool_result.payload_span is not None
+        assert tool.tool_result.carries_attack is True
