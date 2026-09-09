@@ -9,8 +9,13 @@ Two rules keep it that way.
 
 - Nothing in this module imports from the rest of the package. The dependency
   arrow points inward, always.
-- A protocol here earns its place by having at least two real implementations. A
-  protocol with one implementation is a class with extra steps.
+- A protocol here earns its place by having at least two real implementations.
+  That is a target. Detector has four (regex floor, unplug pipeline, unplug
+  model, protectai), Policy has two (threshold and redact-span), and Agent has
+  two (scripted and accumulating). SpanDetector, Guard, Tool, and Scenario each
+  have one production class. A protocol with one implementation is a class with
+  extra steps; those four stay because the runner and the adapters must agree
+  on a shared shape, not because a second implementation exists.
 """
 
 from __future__ import annotations
@@ -38,7 +43,12 @@ class Span:
             raise ValueError(msg)
 
     def overlaps(self, other: Span) -> int:
-        """Overlapping character count. Zero when disjoint."""
+        """Shared half-open overlap so span metrics do not each invent the formula.
+
+        Zero when disjoint. run.py.evaluate_spans currently inlines the same
+        arithmetic on predicted bounds; that file is owned elsewhere, so this
+        stays as the one implementation those callers should switch to.
+        """
         return max(0, min(self.end, other.end) - max(self.start, other.start))
 
 
@@ -144,6 +154,9 @@ class ToolCall:
     """A request from the agent to a tool."""
 
     tool: str
+    # The corpus writes this on every planned call. ScriptedTool.call ignores
+    # the ToolCall, including args. Deleting the field would break scenarios/
+    # which another worker owns; honouring args is that worker's job.
     args: dict[str, str] = field(default_factory=dict)
 
 
@@ -164,6 +177,8 @@ class ToolResult:
     tool: str
     content: str
     payload_span: Span | None = None
+    # Runner and ScriptedTool write False when the tool is missing or has no
+    # responses. tests/test_runner.py reads it. Metrics do not.
     ok: bool = True
 
     @property
@@ -234,12 +249,19 @@ class Episode:
     """
 
     scenario: str
+    # Runner writes this from Guard.name. tests/test_guard_runner_integration.py
+    # reads it so a real Guard, not a stub, labels the episode. Metrics and
+    # report.py group by detector key in the driver instead, which is a
+    # reporting gap rather than dead weight.
     guard: str
     turns: tuple[Turn, ...]
     attack_succeeded: bool
     task_completed: bool
+    # Runner writes this when the turn budget expired before a final answer.
+    # tests/test_runner.py and tests/test_accumulating.py read it. Metrics and
+    # report.py do not, which is a reporting gap (truncated vs finished is a
+    # different outcome), not a reason to drop the field.
     stopped_early: bool = False
-    notes: str = ""
 
     @property
     def detection_turn(self) -> int | None:
@@ -248,6 +270,11 @@ class Episode:
 
     @property
     def n_turns(self) -> int:
+        """Turn count for callers that should not walk `turns` just to ask length.
+
+        tests/test_guard_runner_integration.py is the reader. Episode metrics
+        walk `turns` themselves.
+        """
         return len(self.turns)
 
 
@@ -261,10 +288,10 @@ class Agent(Protocol):
     """The thing under attack.
 
     Deliberately narrow so a scripted agent can implement it without an API key.
-    A scripted agent makes attack success a property of the injected text rather
-    than of some model's mood, which is what keeps the harness deterministic. A
-    real-LLM agent is a second implementation of the same protocol, not a
-    different runner.
+    Two implementations exist: ScriptedAgent (last-turn compliance) and
+    AccumulatingAgent (concatenated tool text). There is no LLM-backed agent
+    in this tree. Adding one later would be a third implementation of the same
+    protocol, not a different runner.
     """
 
     name: str
@@ -279,7 +306,16 @@ class Scenario(Protocol):
     """A reproducible episode: what the agent is asked, what the tools return, and what counts as compromise."""
 
     key: str
+    # ScriptedScenario copies this onto opening_request when that is empty,
+    # which is how this corpus states what the user asked. The runner reads
+    # opening_request, not this field.
     description: str
+    # ScriptedScenario reads this: benign scenarios get no triggers and
+    # objective_met is always False. MiniScenario does the same. Episode
+    # metrics do not; they derive attack-ness from payload_span (or
+    # attack_succeeded for USER_INPUT). Both are intentional: a scenario
+    # author must declare intent, and a finished Episode must remain
+    # attributable without the Scenario object.
     benign: bool
     opening_request: str
     """What the user asks for on turn 0. The runner puts this on the first turn,

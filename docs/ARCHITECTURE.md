@@ -23,7 +23,7 @@ detectors/               one adapter per system, each implementing Detector
 policies/                threshold policies, including the vendors' published ones
 guard.py                 Detector + Policy, placed at a boundary
 tools/                   scripted tools; the injection lives in a tool result
-agents/                  scripted agent (default) and an LLM adapter (optional)
+agents/                  ScriptedAgent and AccumulatingAgent; no LLM adapter
 scenarios/               the corpus, declarative
 sim/runner.py            Scenario x Guard -> Episode
 metrics/                 static metrics (v1) and episode metrics (v2)
@@ -56,11 +56,15 @@ table.
 blocks a payload and an agent that ignores it are different outcomes. Collapsing
 them flatters the guard. `Episode` carries `attack_succeeded` and `task_completed`
 independently, because a guard that stops the attack by breaking the task has not
-won anything.
+won anything. It also records `guard` and `stopped_early`: a truncated run is
+not a finished one, and an unnamed guard cannot be read back. Metrics and
+`report.py` do not yet consume those two fields. That is a reporting gap, not
+an invitation to drop them.
 
 **The default agent is scripted.** Attack success then depends on the injected
 text and the guard, not on a model's mood, and the suite stays deterministic and
-offline. An LLM agent is a second implementation of the same protocol.
+offline. Agent has two implementations, ScriptedAgent and AccumulatingAgent.
+There is no LLM-backed agent in this tree.
 
 ## What v2 measures that v1 could not
 
@@ -88,3 +92,11 @@ corpus ever outgrows that, it can be serialised then and not before.
 The v1 modules stay where they are and keep producing the v1 table. A refactor
 that changes a published number is a bug, and `results/results.json` from v1 is
 the regression test.
+
+A protocol earns its place by having at least two real implementations. That is
+a target, not yet a fact. Detector has four (regex floor, unplug pipeline,
+unplug model, protectai), Policy has two (threshold and redact-span), and Agent
+has two (scripted and accumulating). SpanDetector, Guard, Tool, and Scenario
+each have one production class. Those four stay because the runner and the
+adapters must agree on a shared shape, not because a second implementation
+exists. There is no LLM-backed Agent.
