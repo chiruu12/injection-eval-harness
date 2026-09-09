@@ -17,6 +17,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 from . import metrics
+from .bars import fails_contamination, fails_robustness
 from .core.contracts import SpanDetector
 from .data import Split, load_split
 from .detectors.regex_floor import regex_hits
@@ -24,6 +25,7 @@ from .detectors.registry import all_detectors
 from .guard import Guard
 from .pins import DATASETS, MODELS, SEED
 from .policies import published_policy
+from .sim.driver import evaluate_episodes
 from .transforms import TRANSFORMS, carrier_span
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -84,9 +86,8 @@ def evaluate(split: Split, guards: list[Guard]) -> dict:
             block["pair_accuracy"] = round(acc, 4)
             block["pairs_correct"] = ok
             block["pairs_total"] = total
-            block["marginal_accuracy"] = round(
-                (block["tp"] + block["tn"]) / block["n"], 4
-            )
+            marg, _, _ = metrics.marginal_accuracy(labels, smap, guard.policy.threshold)
+            block["marginal_accuracy"] = round(marg, 4)
         block["scores"] = [round(s, 6) for s in scores]
         out[guard.detector.key] = block
     return out
@@ -109,7 +110,7 @@ def evaluate_shift(split: Split, guards: list[Guard]) -> dict:
             row["transforms"][name] = {
                 "recall": round(rec, 4),
                 "delta": round(rec - base_recall, 4),
-                "fails_robustness_bar": (base_recall - rec) > 0.20,
+                "fails_robustness_bar": fails_robustness(base_recall, rec),
             }
         out[guard.detector.key] = row
     return out
@@ -186,7 +187,7 @@ def main() -> None:
     for key in by_key:
         p = report["primary_test"][key]["f1"]
         d = report["control_deepset_test"][key]["f1"]
-        report["control_deepset_test"][key]["contamination_flag"] = (d - p) > 0.15
+        report["control_deepset_test"][key]["contamination_flag"] = fails_contamination(d, p)
         report["control_deepset_test"][key]["f1_gap_vs_primary"] = round(d - p, 4)
 
     report["stage_split"] = evaluate_stage_split(primary_test, by_key["unplug-pipeline"].detector)
@@ -197,6 +198,7 @@ def main() -> None:
     report["regex_floor_hit_names"] = {
         e.uid: regex_hits(e.text) for e in primary_test.examples if regex_hits(e.text)
     }
+    report["episodes"] = evaluate_episodes(guards)
 
     (RESULTS / "manifest.json").write_text(json.dumps(manifest(splits), indent=2) + "\n")
     (RESULTS / "results.json").write_text(json.dumps(report, indent=2) + "\n")

@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from .bars import ROBUSTNESS_RECALL_DROP
+
 ROOT = Path(__file__).resolve().parents[2]
 RESULTS = ROOT / "results"
 
@@ -71,6 +73,60 @@ def shift_table(shift: dict) -> str:
     return "\n".join(lines)
 
 
+def episode_table(block: dict) -> str:
+    """Attack success off versus on, plus the utility and timing columns."""
+    head = ["system", "ASR off", "ASR on", "utility", "late det", "never-fired"]
+    lines = [_row(head), _row(["---"] * len(head))]
+    for key in ORDER:
+        if key not in block:
+            continue
+        delta = block[key]["delta"]
+        on = block[key]["with_guard"]
+        lines.append(_row([
+            key,
+            f"{delta['attack_success_rate_without_guard']:.3f}",
+            (
+                f"{delta['attack_success_rate_with_guard']:.3f} "
+                f"({delta['attack_success_delta']:+.3f})"
+            ),
+            (
+                f"{delta['utility_rate_with_guard']:.3f} "
+                f"({delta['utility_delta']:+.3f})"
+            ),
+            f"{on['late_detection']['late_detection_rate']:.3f}",
+            f"{on['detection_turns']['never_fired_share']:.3f}",
+        ]))
+    return "\n".join(lines)
+
+
+def position_table(block: dict) -> str:
+    """Attack success at each long_horizon posNN slot, guard on."""
+    suffixes: list[str] = []
+    seen: set[str] = set()
+    for key in ORDER:
+        if key not in block:
+            continue
+        for suffix in block[key]["with_guard"]["position_sensitivity"]:
+            if suffix not in seen:
+                seen.add(suffix)
+                suffixes.append(suffix)
+    suffixes.sort(key=lambda s: int(s[3:]))
+    head = ["system", *suffixes]
+    lines = [_row(head), _row(["---"] * len(head))]
+    for key in ORDER:
+        if key not in block:
+            continue
+        pos = block[key]["with_guard"]["position_sensitivity"]
+        cells = [key]
+        for suffix in suffixes:
+            if suffix in pos:
+                cells.append(f"{pos[suffix]['attack_success_rate']:.3f}")
+            else:
+                cells.append("n/a")
+        lines.append(_row(cells))
+    return "\n".join(lines)
+
+
 def main() -> None:
     r = json.loads((RESULTS / "results.json").read_text())
     m = json.loads((RESULTS / "manifest.json").read_text())
@@ -88,7 +144,10 @@ def main() -> None:
     if "shift" in r:
         out.append("\n### Controlled shift: seeded obfuscation of the 120 test positives\n")
         out.append(shift_table(r["shift"]))
-        out.append("\n`!` marks a drop of more than 20 absolute points, the pre-registered bar.")
+        drop = int(ROBUSTNESS_RECALL_DROP * 100)
+        out.append(
+            f"\n`!` marks a drop of more than {drop} absolute points, the pre-registered bar."
+        )
     if "spans_carrier" in r:
         s = r["spans_carrier"]
         out.append(
@@ -106,6 +165,21 @@ def main() -> None:
         f"checkpoint was never consulted ({ss['regex_only']} regex-only, "
         f"{ss['model_involved']} reached the model, {ss['no_finding']} no finding)."
     )
+    if "episodes" in r:
+        out.append(
+            "\n### Episodes: attack success with the guard off versus on the "
+            "tool-output boundary\n"
+        )
+        out.append(episode_table(r["episodes"]))
+        out.append(
+            "\nASR on and utility show the signed delta versus the unguarded run. "
+            "Utility is task completion on the benign controls. Late detection and "
+            "never-fired are the with-guard run."
+        )
+        out.append(
+            "\n### Position sensitivity: same payload at long_horizon posNN, guard on\n"
+        )
+        out.append(position_table(r["episodes"]))
     out.append(f"\n---\n\nGenerated {m['generated_utc']} from harness {m['harness_git_sha'][:12]}, seed {m['seed']}.")
     text = "\n".join(out) + "\n"
     (RESULTS / "TABLES.md").write_text(text)
