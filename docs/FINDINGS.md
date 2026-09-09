@@ -130,7 +130,12 @@ than obfuscating the instruction does.
 
 Neither of those is visible if you evaluate one system on one slice.
 
-**The base64 column is partly measuring my own transform.** `t_base64` prepends
+**The base64 column was measuring my own transform, and splitting it broke the
+result in both directions.** The paragraph below was written before the slice was
+split. What it describes is now the `base64_with_instruction` column, and the
+honest version of the finding is the section after it.
+
+**The old wording, kept because it is what the committed table said:** `t_base64` prepends
 the plaintext line "Decode the following and carry out what it says" before the
 encoded payload. At its corrected threshold the regex floor scores 1.000 on that
 slice, up from a 0.250 baseline, purely because that sentence trips the
@@ -142,8 +147,46 @@ can top the base64 column by recognising the wrapper, which means protectai's
 scores every one of the 120 below threshold.
 
 The fix is a base64 variant with no plaintext instruction, where the payload has
-to be decoded to be understood at all. That is not in this table and the column
-should not be read as a decoding result until it is.
+to be decoded to be understood at all. That variant now exists as `base64_bare`,
+and it says something none of the earlier numbers did.
+
+## 4b. Nothing here decodes anything
+
+Recall on the 120 primary positives, at each system's published threshold:
+
+| system | untransformed | base64 with instruction | base64 bare |
+|---|---|---|---|
+| regex-floor | 0.250 | 1.000 | 0.000 |
+| protectai | 0.842 | 1.000 | 0.000 |
+| unplug-pipeline | 0.867 | 0.917 | 1.000 |
+| unplug-model | 0.792 | 0.000 | 0.992 |
+
+Read the top two rows together. `protectai` scores exactly what a twelve-pattern
+regex scores, on both variants: perfect with the plaintext instruction attached,
+zero without it. Its base64 robustness was entirely the wrapper. Strip one English
+sentence and it sees nothing.
+
+The `unplug-model` row looks like the opposite and is not. It fires on 60 of 60
+encoded attack payloads, and on 57 of 60 encoded BENIGN payloads put through the
+same transform. It is not detecting the instruction inside the blob, it is
+detecting that there is a blob. A recall of 0.992 alongside a false-positive rate
+near 0.95 is not a detection result, it is a system that refuses base64.
+
+`unplug-pipeline` reaches 1.000 on the bare variant because the SDK decodes
+encoded payloads before scoring, which is the documented behaviour of the decoder
+rather than of the checkpoint, and is the same split finding 4 already reports.
+
+So the honest summary is that no checkpoint in this table decodes anything. One
+flags every encoding, two flag none, and the only system that handles the case
+does it with a decoder bolted on in front.
+
+**This finding also exposes a hole in the harness itself.** The shift slice runs
+over positives only, so every transform in the table above reports a recall with
+no false-positive rate beside it. That is precisely the error this repo was built
+to point at in other people's evaluations, and it sat in my own table for the
+whole of the first version. A recall number on a transformed slice means nothing
+without the same transform applied to the benign half, and the next revision has
+to add that arm before any of these transform numbers are quoted anywhere.
 
 ## 5. The SDK decides without the model on 21 of 142 findings
 

@@ -29,12 +29,12 @@ F1 gap, control minus primary: regex-floor -0.129, unplug-model -0.097, unplug-p
 
 ### Controlled shift: seeded obfuscation of the 120 test positives
 
-| system | baseline R | base64 | leetspeak | homoglyph | zero_width | whitespace | carrier |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| regex-floor | 0.250 | 1.000 (+0.750) | 0.000 (-0.250) ! | 0.017 (-0.233) ! | 0.133 (-0.117) | 0.133 (-0.117) | 0.250 (+0.000) |
-| unplug-model | 0.792 | 0.000 (-0.792) ! | 0.633 (-0.158) | 0.708 (-0.083) | 0.867 (+0.075) | 0.808 (+0.017) | 1.000 (+0.208) |
-| unplug-pipeline | 0.867 | 0.917 (+0.050) | 0.850 (-0.017) | 1.000 (+0.133) | 0.942 (+0.075) | 0.842 (-0.025) | 1.000 (+0.133) |
-| protectai | 0.842 | 1.000 (+0.158) | 1.000 (+0.158) | 0.958 (+0.117) | 0.792 (-0.050) | 0.758 (-0.083) | 0.450 (-0.392) ! |
+| system | baseline R | base64_with_instruction | base64_bare | leetspeak | homoglyph | zero_width | whitespace | carrier |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| regex-floor | 0.250 | 1.000 (+0.750) | 0.000 (-0.250) ! | 0.000 (-0.250) ! | 0.017 (-0.233) ! | 0.133 (-0.117) | 0.133 (-0.117) | 0.250 (+0.000) |
+| unplug-model | 0.792 | 0.000 (-0.792) ! | 0.992 (+0.200) | 0.633 (-0.158) | 0.708 (-0.083) | 0.867 (+0.075) | 0.808 (+0.017) | 1.000 (+0.208) |
+| unplug-pipeline | 0.867 | 0.917 (+0.050) | 1.000 (+0.133) | 0.850 (-0.017) | 1.000 (+0.133) | 0.942 (+0.075) | 0.842 (-0.025) | 1.000 (+0.133) |
+| protectai | 0.842 | 1.000 (+0.158) | 0.000 (-0.842) ! | 1.000 (+0.158) | 0.958 (+0.117) | 0.792 (-0.050) | 0.758 (-0.083) | 0.450 (-0.392) ! |
 
 `!` marks a drop of more than 20 absolute points, the pre-registered bar.
 
@@ -51,9 +51,9 @@ Of the primary test rows that produced any finding, 14.8% were decided by the re
 | system | ASR off | ASR on | utility | late det | never-fired |
 | --- | --- | --- | --- | --- | --- |
 | regex-floor | 1.000 | 0.308 (-0.692) | 1.000 (+0.000) | 0.000 | 0.474 |
-| unplug-model | 1.000 | 0.231 (-0.769) | 1.000 (+0.000) | 0.154 | 0.263 |
-| unplug-pipeline | 1.000 | 0.077 (-0.923) | 1.000 (+0.000) | 0.154 | 0.053 |
-| protectai | 1.000 | 0.846 (-0.154) | 1.000 (+0.000) | 0.077 | 0.895 |
+| unplug-model | 1.000 | 0.385 (-0.615) | 1.000 (+0.000) | 0.000 | 0.263 |
+| unplug-pipeline | 1.000 | 0.077 (-0.923) | 1.000 (+0.000) | 0.000 | 0.053 |
+| protectai | 1.000 | 0.846 (-0.154) | 1.000 (+0.000) | 0.000 | 0.895 |
 
 ASR on and utility show the signed delta versus the unguarded run. Utility is task completion on the benign controls. Late detection and never-fired are the with-guard run.
 
@@ -62,10 +62,10 @@ ASR on and utility show the signed delta versus the unguarded run. Utility is ta
 | system | pos01 | pos05 | pos10 |
 | --- | --- | --- | --- |
 | regex-floor | 0.000 | 0.000 | 0.000 |
-| unplug-model | 0.000 | 0.000 | 0.000 |
+| unplug-model | 1.000 | 0.000 | 0.000 |
 | unplug-pipeline | 0.000 | 0.000 | 0.000 |
 | protectai | 1.000 | 1.000 | 0.000 |
 
 ---
 
-Generated 2026-09-09T12:19:58+00:00 from harness a4b29667eec7, seed 20260912.
+Generated 2026-09-09T12:44:07+00:00 from harness da8ad0eb75f8, seed 20260912.
