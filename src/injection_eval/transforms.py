@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import base64
 import random
+import re
 from collections.abc import Callable
 
 _LEET = str.maketrans({"a": "4", "e": "3", "i": "1", "o": "0", "s": "5", "t": "7"})
@@ -85,19 +86,36 @@ def t_homoglyph(text: str, uid: str) -> str:
     return "".join(out)
 
 
+# Any word this long or longer gets split. An audit found the previous version
+# targeted a hand-written list of 16 trigger words while the regex floor keys on
+# roughly a hundred, so on 16 of 120 rows a complete keyword match survived the
+# transform untouched and the column scored 0.133 without any robustness at all.
+# A transform that only obfuscates the words we happened to think of measures our
+# imagination. Splitting every substantial word is detector-agnostic, which is the
+# property that matters: the transform must not be tuned to the baseline it is
+# compared against.
+_MIN_SPLIT_LEN = 4
+
+_WORD = re.compile(rf"[A-Za-z]{{{_MIN_SPLIT_LEN},}}")
+
+
 def _split_triggers(text: str, sep: Callable[[], str]) -> str:
-    lowered = text.lower()
+    """Insert a separator inside every word of at least _MIN_SPLIT_LEN letters.
+
+    Uses non-overlapping regex matches rather than substring search per keyword.
+    The old approach found "instruction" and "instructions" as separate hits at
+    overlapping offsets and applied both edits, rendering the word as
+    "instructionns". That is not a label-preserving transform: the text no longer
+    contains the instruction it is supposed to be testing.
+    """
     edits: list[tuple[int, int, str]] = []
-    for word in _TRIGGERS:
-        start = 0
-        while (i := lowered.find(word, start)) != -1:
-            original = text[i : i + len(word)]
-            mid = len(original) // 2
-            edits.append((i, i + len(word), original[:mid] + sep() + original[mid:]))
-            start = i + len(word)
-    edits.sort(reverse=True)
+    for m in _WORD.finditer(text):
+        word = m.group(0)
+        mid = len(word) // 2
+        edits.append((m.start(), m.end(), word[:mid] + sep() + word[mid:]))
     out = text
-    for a, b, rep in edits:
+    # Apply right to left so earlier offsets stay valid.
+    for a, b, rep in reversed(edits):
         out = out[:a] + rep + out[b:]
     return out
 

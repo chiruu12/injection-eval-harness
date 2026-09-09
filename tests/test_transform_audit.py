@@ -137,17 +137,23 @@ def test_whitespace_is_invertible_away_from_the_overlap():
     assert regex_hits(out) == []
 
 
-def test_splitting_transforms_pass_uncovered_matches_through_untouched():
-    """The partial confound: floor hits built from words outside _TRIGGERS survive verbatim.
+def test_splitting_transforms_cover_matches_outside_the_old_trigger_list():
+    """The partial confound is closed: these texts no longer survive untouched.
 
-    A fix that extends the split vocabulary will make these texts change, and
-    must update this test deliberately.
+    This test asserted the opposite until the split vocabulary was widened. The
+    audit found the transforms split a hand-written list of 16 words while the
+    floor keys on roughly a hundred, so a complete keyword match survived on 16
+    of 120 rows and the column scored 0.133 with no robustness behind it. The
+    transform now splits every word of at least four letters, which is
+    detector-agnostic: it cannot be accused of being tuned to the baseline it is
+    measured against.
     """
     for text in UNCOVERED_HITS:
         assert regex_hits(text)
         for name in ("zero_width", "whitespace"):
-            assert TRANSFORMS[name](text, "uid-audit") == text, name
-            assert regex_hits(TRANSFORMS[name](text, "uid-audit")) == regex_hits(text)
+            out = TRANSFORMS[name](text, "uid-audit")
+            assert out != text, name
+            assert not regex_hits(out), (name, out)
 
 
 def test_shift_transforms_never_create_floor_hits():
@@ -166,17 +172,17 @@ def test_shift_transforms_never_create_floor_hits():
             assert after <= before, (name, text)
 
 
-def test_instructions_overlap_mangles_the_word_today():
-    """Pins the known defect from docs/TRANSFORM-AUDIT.md, not intended behaviour.
+def test_overlapping_words_no_longer_mangle_the_text():
+    """Label preservation: stripping the inserted characters must recover the original.
 
-    Both "instruction" and "instructions" are in _TRIGGERS, both mid-splits
-    land on one span, and stripping the inserted characters no longer
-    round-trips. The zero_width form is exactly predictable because its
-    separator is always one character; whitespace mixes separator widths, so
-    only the non-recovery is pinned there. Fix the overlap (longest match
-    wins) and flip this test.
+    This test asserted the mangling until the overlap was fixed. "instruction"
+    and "instructions" were both in the old trigger list, both mid-splits landed
+    on the same span, and the word came out as "instructionns". A transform that
+    changes which words the text contains is not label-preserving, so a recall
+    drop on that slice would not have meant what the table said it meant.
     """
     out = TRANSFORMS["zero_width"](OVERLAP_TEXT, "uid-audit")
-    assert out.replace(_ZWSP, "") == MANGLED
+    assert out.replace(_ZWSP, "") == OVERLAP_TEXT
+    assert MANGLED not in out.replace(_ZWSP, "")
     ws = TRANSFORMS["whitespace"](OVERLAP_TEXT, "uid-audit")
-    assert "".join(ws.split()) != "".join(OVERLAP_TEXT.split())
+    assert "".join(ws.split()) == "".join(OVERLAP_TEXT.split())
