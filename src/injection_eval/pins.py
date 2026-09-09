@@ -19,7 +19,6 @@ class DatasetPin:
     license: str
     published: str
     role: str
-    note: str
 
 
 @dataclass(frozen=True)
@@ -31,31 +30,27 @@ class ModelPin:
 
 
 DATASETS: dict[str, DatasetPin] = {
+    # Published after every model under test. That constrains these Hub
+    # repositories only: the set is synthetic_curated, so upload date is
+    # not creation date and says nothing about what it was derived from.
+    # Treat publication order as a weak control, not a firewall. Paired:
+    # each attack has a benign twin sharing asset, role, tool and topic.
     "boundary_pairs": DatasetPin(
         repo_id="3nesdeniz/agentic-prompt-injection-boundary-pairs",
         sha="a5682e7573e1c7bc4b12e64d49c0dcd90ca776cf",
         license="cc-by-4.0",
         published="2026-07-13",
         role="primary",
-        note=(
-            "Published after every model under test. That constrains these Hub "
-            "repositories only: the set is synthetic_curated, so upload date is "
-            "not creation date and says nothing about what it was derived from. "
-            "Treat publication order as a weak control, not a firewall. Paired: "
-            "each attack has a benign twin sharing asset, role, tool and topic."
-        ),
     ),
+    # 110K downloads, predates every model here. Almost certainly in the
+    # training mix of every prompt-injection detector on the Hub. Present
+    # as a control, not as a second result.
     "deepset": DatasetPin(
         repo_id="deepset/prompt-injections",
         sha="4f61ecb038e9c3fb77e21034b22511b523772cdd",
         license="apache-2.0",
         published="2023-05-17",
         role="contamination-control",
-        note=(
-            "110K downloads, predates every model here. Almost certainly in the "
-            "training mix of every prompt-injection detector on the Hub. Present "
-            "as a control, not as a second result."
-        ),
     ),
 }
 

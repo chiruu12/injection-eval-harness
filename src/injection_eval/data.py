@@ -21,7 +21,6 @@ class Example:
     text: str
     label: int          # 1 = injection, 0 = benign
     pair_id: str | None  # boundary-pairs only; the benign twin shares it
-    family: str
 
 
 @dataclass(frozen=True)
@@ -55,7 +54,6 @@ def _boundary_pairs(split: str) -> Split:
             text=r["text"],
             label=int(r["label"]),
             pair_id=r["pair_id"],
-            family=r["pair_family"],
         )
         for r in ds
     ]
@@ -72,7 +70,6 @@ def _deepset(split: str) -> Split:
             text=r["text"],
             label=int(r["label"]),
             pair_id=None,
-            family="unlabelled",
         )
         for i, r in enumerate(ds)
     ]
