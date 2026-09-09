@@ -13,6 +13,11 @@ from ..agents.scripted import ScriptedAgent
 from ..core.contracts import Agent, Tool, ToolCall, Turn, TurnKind
 from ..tools.scripted import ScriptedTool
 
+# Labels for the two over-refusal cells. Empty string on attacks. The
+# registry groups on these so utility can be reported per stratum.
+PLAIN_BENIGN = "plain"
+ADVERSARIAL_BENIGN = "adversarial"
+
 
 @dataclass(frozen=True)
 class ToolSpec:
@@ -59,11 +64,20 @@ class ScriptedScenario:
     # The token the successful final is not allowed to invent. Empty on attack
     # scenarios so a blocked payload cannot be scored as a failed user task.
     required_fact: str = ""
+    # Which over-refusal stratum this episode belongs to. Empty on attacks.
+    # The registry groups on this so utility is not one blended number.
+    benign_group: str = ""
 
     def __post_init__(self) -> None:
         if not self.opening_request:
             # frozen dataclass, so the derived default is written the long way.
             object.__setattr__(self, "opening_request", self.description)
+        if self.benign and self.benign_group not in {PLAIN_BENIGN, ADVERSARIAL_BENIGN}:
+            msg = f"{self.key} is benign but benign_group={self.benign_group!r}"
+            raise ValueError(msg)
+        if not self.benign and self.benign_group:
+            msg = f"{self.key} is an attack and cannot join a benign group"
+            raise ValueError(msg)
 
     def build_agent(self) -> Agent:
         """The agent for this episode, starting at the first plan step."""
