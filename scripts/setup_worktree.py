@@ -23,7 +23,7 @@ def run(*cmd: str) -> None:
 
 def main() -> int:
     run("uv", "venv", "--python", "3.12", str(ROOT / ".venv"))
-    run("uv", "pip", "install", "--python", str(VENV), "-e", ".[dev]")
+    run("uv", "sync", "--frozen", "--extra", "dev")
     return 0
 
 

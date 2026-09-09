@@ -15,6 +15,21 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest"]
 
+[tool.uv]
+# Reproducibility here means the code as well as the weights. uv.lock is
+# committed and CI installs with --frozen, so a new transformers or torch
+# release cannot move a reported number without a visible lockfile diff.
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+# PyPI's linux torch wheel is the CUDA build and drags in ~2.5 GB of nvidia-*
+# packages that nothing here uses. Every detector runs on CPU.
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

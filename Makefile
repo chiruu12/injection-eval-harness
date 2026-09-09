@@ -4,7 +4,7 @@ PY := ./.venv/bin/python
 
 setup:
 	uv venv --python 3.12 .venv
-	uv pip install --python $(PY) -e ".[dev]"
+	uv sync --frozen --extra dev
 
 fetch:
 	$(PY) -m injection_eval.fetch

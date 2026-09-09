@@ -25,6 +25,14 @@ jobs:
       - name: Set up the environment
         run: python3 scripts/setup_worktree.py
 
+      # Weights are pinned by commit sha, so a hit is the same bytes as a miss.
+      # Keyed on pins.py: bump a pin and the cache is rebuilt.
+      - name: Cache the pinned weights
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-${{ hashFiles('src/injection_eval/pins.py') }}
+
       - name: Fetch every pinned artifact
         run: .venv/bin/python -m injection_eval.fetch
 
