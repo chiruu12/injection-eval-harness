@@ -17,9 +17,13 @@ from importlib.metadata import version
 from pathlib import Path
 
 from . import metrics
+from .core.contracts import SpanDetector
 from .data import Split, load_split
+from .detectors.regex_floor import regex_hits
+from .detectors.registry import all_detectors
+from .guard import Guard
 from .pins import DATASETS, MODELS, SEED
-from .systems import all_systems, regex_hits
+from .policies import published_policy
 from .transforms import TRANSFORMS, carrier_span
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -62,21 +66,21 @@ def manifest(splits: list[Split]) -> dict:
     }
 
 
-def evaluate(split: Split, systems) -> dict:
+def evaluate(split: Split, guards: list[Guard]) -> dict:
     texts = [e.text for e in split.examples]
     y = [e.label for e in split.examples]
     out = {}
-    for sys_ in systems:
-        scores = sys_.score(texts)
-        block = metrics.summarise(y, scores, sys_.threshold, SEED)
-        block["system"] = sys_.key
-        block["label"] = sys_.label
-        block["threshold_source"] = sys_.threshold_source
+    for guard in guards:
+        scores = guard.detector.score(texts)
+        block = metrics.summarise(y, scores, guard.policy.threshold, SEED)
+        block["system"] = guard.detector.key
+        block["label"] = guard.detector.label
+        block["threshold_source"] = guard.policy.threshold_source
         if split.examples[0].pair_id is not None:
             labels = {e.uid: e.label for e in split.examples}
             smap = dict(zip((e.uid for e in split.examples), scores, strict=True))
             pairs = {e.uid: e.pair_id for e in split.examples}
-            acc, ok, total = metrics.pair_accuracy(labels, smap, pairs, sys_.threshold)
+            acc, ok, total = metrics.pair_accuracy(labels, smap, pairs, guard.policy.threshold)
             block["pair_accuracy"] = round(acc, 4)
             block["pairs_correct"] = ok
             block["pairs_total"] = total
@@ -84,33 +88,34 @@ def evaluate(split: Split, systems) -> dict:
                 (block["tp"] + block["tn"]) / block["n"], 4
             )
         block["scores"] = [round(s, 6) for s in scores]
-        out[sys_.key] = block
+        out[guard.detector.key] = block
     return out
 
 
-def evaluate_shift(split: Split, systems) -> dict:
+def evaluate_shift(split: Split, guards: list[Guard]) -> dict:
     """Recall on each transform vs. baseline recall, same threshold, positives only."""
     positives = [e for e in split.examples if e.label == 1]
     base_texts = [e.text for e in positives]
     out: dict[str, dict] = {}
-    for sys_ in systems:
-        base = sys_.score(base_texts)
-        base_recall = sum(s >= sys_.threshold for s in base) / len(base)
+    for guard in guards:
+        base = guard.detector.score(base_texts)
+        thr = guard.policy.threshold
+        base_recall = sum(s >= thr for s in base) / len(base)
         row = {"baseline_recall": round(base_recall, 4), "n_positives": len(positives), "transforms": {}}
         for name, fn in TRANSFORMS.items():
             texts = [fn(e.text, e.uid) for e in positives]
-            scores = sys_.score(texts)
-            rec = sum(s >= sys_.threshold for s in scores) / len(scores)
+            scores = guard.detector.score(texts)
+            rec = sum(s >= thr for s in scores) / len(scores)
             row["transforms"][name] = {
                 "recall": round(rec, 4),
                 "delta": round(rec - base_recall, 4),
                 "fails_robustness_bar": (base_recall - rec) > 0.20,
             }
-        out[sys_.key] = row
+        out[guard.detector.key] = row
     return out
 
 
-def evaluate_spans(split: Split, unplug_model) -> dict:
+def evaluate_spans(split: Split, unplug_model: SpanDetector) -> dict:
     """Span metrics, carrier transform only, where offsets are known by construction."""
     positives = [e for e in split.examples if e.label == 1]
     inter = union = 0
@@ -123,7 +128,7 @@ def evaluate_spans(split: Split, unplug_model) -> dict:
             union += gold_b - gold_a
             continue
         hit += 1
-        pa, pb = min(p[0] for p in pred), max(p[1] for p in pred)
+        pa, pb = min(p.start for p in pred), max(p.end for p in pred)
         i = max(0, min(gold_b, pb) - max(gold_a, pa))
         u = max(gold_b, pb) - min(gold_a, pa)
         inter += i
@@ -164,8 +169,8 @@ def main() -> None:
     args = ap.parse_args()
 
     RESULTS.mkdir(exist_ok=True)
-    systems = all_systems()
-    by_key = {s.key: s for s in systems}
+    guards = [Guard(d, published_policy(d.key)) for d in all_detectors()]
+    by_key = {g.detector.key: g for g in guards}
 
     primary_val = load_split("boundary_pairs", "validation")
     primary_test = load_split("boundary_pairs", "test")
@@ -173,9 +178,9 @@ def main() -> None:
     splits = [primary_val, primary_test, control_test]
 
     report = {
-        "primary_test": evaluate(primary_test, systems),
-        "primary_validation": evaluate(primary_val, systems),
-        "control_deepset_test": evaluate(control_test, systems),
+        "primary_test": evaluate(primary_test, guards),
+        "primary_validation": evaluate(primary_val, guards),
+        "control_deepset_test": evaluate(control_test, guards),
     }
 
     for key in by_key:
@@ -184,10 +189,10 @@ def main() -> None:
         report["control_deepset_test"][key]["contamination_flag"] = (d - p) > 0.15
         report["control_deepset_test"][key]["f1_gap_vs_primary"] = round(d - p, 4)
 
-    report["stage_split"] = evaluate_stage_split(primary_test, by_key["unplug-pipeline"])
+    report["stage_split"] = evaluate_stage_split(primary_test, by_key["unplug-pipeline"].detector)
     if not args.skip_shift:
-        report["shift"] = evaluate_shift(primary_test, systems)
-        report["spans_carrier"] = evaluate_spans(primary_test, by_key["unplug-model"])
+        report["shift"] = evaluate_shift(primary_test, guards)
+        report["spans_carrier"] = evaluate_spans(primary_test, by_key["unplug-model"].detector)
 
     report["regex_floor_hit_names"] = {
         e.uid: regex_hits(e.text) for e in primary_test.examples if regex_hits(e.text)
