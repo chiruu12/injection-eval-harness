@@ -12,12 +12,13 @@ import json
 import platform
 import subprocess
 import sys
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
 
 from . import metrics
-from .bars import fails_contamination, fails_robustness
+from .bars import fails_contamination, fails_fpr_shift, fails_robustness
 from .core.contracts import SpanDetector
 from .data import Split, load_split
 from .detectors.regex_floor import regex_hits
@@ -93,25 +94,108 @@ def evaluate(split: Split, guards: list[Guard]) -> dict:
     return out
 
 
-def evaluate_shift(split: Split, guards: list[Guard]) -> dict:
-    """Recall on each transform vs. baseline recall, same threshold, positives only."""
+def _transformed(
+    fn: Callable[[str, str], str], examples: list
+) -> tuple[list[str] | None, str | None]:
+    """The texts of one arm after a transform, or why that arm cannot be scored."""
+    texts: list[str] = []
+    for example in examples:
+        try:
+            texts.append(fn(example.text, example.uid))
+        except Exception as exc:
+            # Do not drop the transform from the table; a missing cell would
+            # look like the arm was never part of the design.
+            return None, f"{type(exc).__name__}: {exc} (uid={example.uid!r})"
+    return texts, None
+
+
+def _fire(scores: list[float], threshold: float) -> tuple[float, int, int]:
+    """Hits at the operating threshold, with the denominator that rate belongs to."""
+    n = len(scores)
+    hits = sum(s >= threshold for s in scores)
+    return (hits / n if n else 0.0), hits, n
+
+
+def evaluate_shift(
+    split: Split,
+    guards: list[Guard],
+    transforms: Mapping[str, Callable[[str, str], str]] | None = None,
+) -> dict:
+    """Robustness of each detector to seeded, label-preserving surface changes.
+
+    Both arms of the split are transformed, because a recall figure without
+    its false-positive rate is not a result.
+    """
+    table = TRANSFORMS if transforms is None else transforms
     positives = [e for e in split.examples if e.label == 1]
-    base_texts = [e.text for e in positives]
+    benign = [e for e in split.examples if e.label == 0]
     out: dict[str, dict] = {}
     for guard in guards:
-        base = guard.detector.score(base_texts)
         thr = guard.policy.threshold
-        base_recall = sum(s >= thr for s in base) / len(base)
-        row = {"baseline_recall": round(base_recall, 4), "n_positives": len(positives), "transforms": {}}
-        for name, fn in TRANSFORMS.items():
-            texts = [fn(e.text, e.uid) for e in positives]
-            scores = guard.detector.score(texts)
-            rec = sum(s >= thr for s in scores) / len(scores)
-            row["transforms"][name] = {
-                "recall": round(rec, 4),
-                "delta": round(rec - base_recall, 4),
-                "fails_robustness_bar": fails_robustness(base_recall, rec),
-            }
+        # Separate batches keep the positive-arm measurement identical to the
+        # slice that used to score positives only.
+        base_pos = guard.detector.score([e.text for e in positives]) if positives else []
+        base_ben = guard.detector.score([e.text for e in benign]) if benign else []
+        base_recall, _, _ = _fire(base_pos, thr)
+        base_fpr, _, _ = _fire(base_ben, thr)
+        row: dict = {
+            "baseline_recall": round(base_recall, 4),
+            "n_positives": len(positives),
+            "baseline_fpr": round(base_fpr, 4),
+            "n_benign": len(benign),
+            "transforms": {},
+        }
+        for name, fn in table.items():
+            entry: dict = {}
+            pos_texts, pos_note = _transformed(fn, positives)
+            if pos_note is not None:
+                entry.update(
+                    {
+                        "recall": None,
+                        "delta": None,
+                        "recalled": 0,
+                        "n_positives": 0,
+                        "fails_robustness_bar": False,
+                        "positives_skipped": pos_note,
+                    }
+                )
+            else:
+                pos_scores = guard.detector.score(pos_texts) if pos_texts else []
+                rec, recalled, rec_n = _fire(pos_scores, thr)
+                entry.update(
+                    {
+                        "recall": round(rec, 4),
+                        "delta": round(rec - base_recall, 4),
+                        "recalled": recalled,
+                        "n_positives": rec_n,
+                        "fails_robustness_bar": fails_robustness(base_recall, rec),
+                    }
+                )
+            ben_texts, ben_note = _transformed(fn, benign)
+            if ben_note is not None:
+                entry.update(
+                    {
+                        "fpr": None,
+                        "fpr_delta": None,
+                        "false_positives": 0,
+                        "n_benign": 0,
+                        "fails_fpr_bar": False,
+                        "benign_skipped": ben_note,
+                    }
+                )
+            else:
+                ben_scores = guard.detector.score(ben_texts) if ben_texts else []
+                fpr, fps, fpr_n = _fire(ben_scores, thr)
+                entry.update(
+                    {
+                        "fpr": round(fpr, 4),
+                        "fpr_delta": round(fpr - base_fpr, 4),
+                        "false_positives": fps,
+                        "n_benign": fpr_n,
+                        "fails_fpr_bar": fails_fpr_shift(base_fpr, fpr),
+                    }
+                )
+            row["transforms"][name] = entry
         out[guard.detector.key] = row
     return out
 

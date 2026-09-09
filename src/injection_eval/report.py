@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .bars import ROBUSTNESS_RECALL_DROP
+from .bars import ROBUSTNESS_FPR_RISE, ROBUSTNESS_RECALL_DROP
 
 ROOT = Path(__file__).resolve().parents[2]
 RESULTS = ROOT / "results"
@@ -56,20 +56,47 @@ def fpr_table(block: dict) -> str:
     return "\n".join(lines)
 
 
+def _shift_cell(
+    rate: float | None, delta: float | None, flagged: bool, skipped: str | None
+) -> str:
+    """One transform cell: rate and signed delta, or the reason the arm was not scored."""
+    if skipped:
+        return str(skipped).replace("|", "/")
+    mark = " !" if flagged else ""
+    return f"{rate:.3f} ({delta:+.3f}){mark}"
+
+
 def shift_table(shift: dict) -> str:
+    """Recall and FPR per transform, adjacent so neither is quoted alone."""
     names = list(next(iter(shift.values()))["transforms"])
-    head = ["system", "baseline R", *names]
+    head = ["system", "arm", "baseline", *names]
     lines = [_row(head), _row(["---"] * len(head))]
     for key in ORDER:
         if key not in shift:
             continue
         row = shift[key]
-        cells = [key, f"{row['baseline_recall']:.3f}"]
+        rec_cells = [key, "R", f"{row['baseline_recall']:.3f}"]
+        fpr_cells = [key, "FPR", f"{row['baseline_fpr']:.3f}"]
         for n in names:
             t = row["transforms"][n]
-            mark = " !" if t["fails_robustness_bar"] else ""
-            cells.append(f"{t['recall']:.3f} ({t['delta']:+.3f}){mark}")
-        lines.append(_row(cells))
+            rec_cells.append(
+                _shift_cell(
+                    t.get("recall"),
+                    t.get("delta"),
+                    t.get("fails_robustness_bar", False),
+                    t.get("positives_skipped"),
+                )
+            )
+            fpr_cells.append(
+                _shift_cell(
+                    t.get("fpr"),
+                    t.get("fpr_delta"),
+                    t.get("fails_fpr_bar", False),
+                    t.get("benign_skipped"),
+                )
+            )
+        lines.append(_row(rec_cells))
+        lines.append(_row(fpr_cells))
     return "\n".join(lines)
 
 
@@ -142,11 +169,19 @@ def main() -> None:
     out.append("\nF1 gap, control minus primary: " +
                ", ".join(f"{k} {v:+.3f}" for k, v in gaps.items()))
     if "shift" in r:
-        out.append("\n### Controlled shift: seeded obfuscation of the 120 test positives\n")
+        sample = next(iter(r["shift"].values()))
+        n_pos = sample["n_positives"]
+        n_ben = sample["n_benign"]
+        out.append(
+            f"\n### Controlled shift: seeded obfuscation of the {n_pos} test positives "
+            f"and {n_ben} test benign rows\n"
+        )
         out.append(shift_table(r["shift"]))
         drop = int(ROBUSTNESS_RECALL_DROP * 100)
+        rise = int(ROBUSTNESS_FPR_RISE * 100)
         out.append(
-            f"\n`!` marks a drop of more than {drop} absolute points, the pre-registered bar."
+            f"\n`!` on R marks a drop of more than {drop} absolute points, the pre-registered bar. "
+            f"`!` on FPR marks a rise of more than {rise} absolute points, the companion bar."
         )
     if "spans_carrier" in r:
         s = r["spans_carrier"]
